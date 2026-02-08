@@ -44,7 +44,7 @@ for tab, farm_name in zip(tabs, st.session_state.farms.keys()):
 
         c1, c2, c3 = st.columns(3)
 
-        # -------- Inputs --------
+    -------- Inputs --------
         with c1:
             farm["total_tons"] = st.number_input(
                 "Total tons",
