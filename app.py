@@ -73,7 +73,16 @@ for idx, tab in enumerate(tabs):
             st.session_state[cut_key] = farm["total_tons"] * farm["target_pct"] / 100
 
         # Manual override ALWAYS allowed
-        st.session_state[cut_key] = st.number_input(
+        st.number_input(
+    "Tons cut",
+    value=st.session_state[cut_key],
+    step=1.0,
+    format="%.2f",
+    key=f"cut_input_{idx}",
+    on_change=lambda i=idx: st.session_state.update(
+        {f"tons_cut_{i}": st.session_state[f"cut_input_{i}"]}
+    ),
+)
             "Tons cut",
             value=st.session_state[cut_key],
             step=1.0,
