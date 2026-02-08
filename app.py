@@ -14,7 +14,8 @@ if "farms" not in st.session_state:
             "target_percent": 20.0,
             "tons_cut": 0.0,
             "bin_weight": 1.0,
-            "bins_per_day": 10.0
+            "bins_per_day": 10.0,
+            "mode": "per
         }
     }
 
