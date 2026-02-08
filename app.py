@@ -4,46 +4,40 @@ st.set_page_config(page_title="Farm Tonnage & Bin Planning", layout="wide")
 
 st.title("Farm Tonnage & Bin Planning")
 
-# -------------------------
-# Session state setup
-# -------------------------
+# ---------- Session state setup ----------
 if "farms" not in st.session_state:
     st.session_state.farms = [
         {
             "name": "Farm 1",
             "total_tons": 10000.0,
             "tons_cut": 0.0,
+            "bin_weight": 10.0,
+            "bins_per_day": 20.0,
             "target_pct": 10.0,
-            "bin_weight": 5.0,
-            "bins_per_day": 50.0,
         }
     ]
 
-# -------------------------
-# Add farm button
-# -------------------------
+# ---------- Add farm ----------
 if st.button("➕ Add farm"):
-    farm_number = len(st.session_state.farms) + 1
     st.session_state.farms.append(
         {
-            "name": f"Farm {farm_number}",
+            "name": f"Farm {len(st.session_state.farms) + 1}",
             "total_tons": 10000.0,
             "tons_cut": 0.0,
+            "bin_weight": 10.0,
+            "bins_per_day": 20.0,
             "target_pct": 10.0,
-            "bin_weight": 5.0,
-            "bins_per_day": 50.0,
         }
     )
 
-# -------------------------
-# Tabs per farm
-# -------------------------
+# ---------- Tabs ----------
 tabs = st.tabs([farm["name"] for farm in st.session_state.farms])
 
+# ---------- Farm UI ----------
 for idx, tab in enumerate(tabs):
-    with tab:
-        farm = st.session_state.farms[idx]
+    farm = st.session_state.farms[idx]
 
+    with tab:
         st.subheader(farm["name"])
 
         col1, col2 = st.columns(2)
@@ -58,17 +52,8 @@ for idx, tab in enumerate(tabs):
                 key=f"total_{idx}",
             )
 
-            farm["tons_cut"] = st.number_input(
-                "Tons cut (manual)",
-                min_value=0.0,
-                value=farm["tons_cut"],
-                step=10.0,
-                format="%.2f",
-                key=f"cut_{idx}",
-            )
-
             farm["target_pct"] = st.number_input(
-                "Target % cut (cumulative)",
+                "Target % to remove (this round)",
                 min_value=0.0,
                 max_value=100.0,
                 value=farm["target_pct"],
@@ -82,30 +67,43 @@ for idx, tab in enumerate(tabs):
                 "Bin weight (tons)",
                 min_value=0.01,
                 value=farm["bin_weight"],
-                step=0.1,
+                step=0.5,
                 format="%.2f",
                 key=f"binwt_{idx}",
             )
 
             farm["bins_per_day"] = st.number_input(
-                "Bins per day",
-                min_value=0.0,
+                "Bins allocated per day",
+                min_value=0.01,
                 value=farm["bins_per_day"],
                 step=1.0,
                 format="%.2f",
                 key=f"binsday_{idx}",
             )
 
-        st.divider()
+        # ---------- Manual tons cut ----------
+        farm["tons_cut"] = st.number_input(
+            "Cumulative tons cut (manual override allowed)",
+            min_value=0.0,
+            max_value=farm["total_tons"],
+            value=farm["tons_cut"],
+            step=10.0,
+            format="%.2f",
+            key=f"cut_{idx}",
+        )
 
-        # -------------------------
-        # Calculations
-        # -------------------------
-        total_required_cut = farm["total_tons"] * farm["target_pct"] / 100
+        # ---------- Apply % button ----------
+        if st.button("Apply %", key=f"apply_{idx}"):
+            additional_cut = farm["total_tons"] * (farm["target_pct"] / 100)
+            farm["tons_cut"] = min(
+                farm["tons_cut"] + additional_cut,
+                farm["total_tons"],
+            )
 
-        this_round_cut = max(
-            total_required_cut - farm["tons_cut"],
-            0.0
+        # ---------- Calculations ----------
+        tons_remaining = max(
+            farm["total_tons"] - farm["tons_cut"],
+            0.0,
         )
 
         pct_cut_actual = (
@@ -113,6 +111,8 @@ for idx, tab in enumerate(tabs):
             if farm["total_tons"] > 0
             else 0.0
         )
+
+        this_round_cut = farm["total_tons"] * (farm["target_pct"] / 100)
 
         bins_required = (
             this_round_cut / farm["bin_weight"]
@@ -126,13 +126,12 @@ for idx, tab in enumerate(tabs):
             else 0.0
         )
 
-        # -------------------------
-        # Display metrics
-        # -------------------------
-        m1, m2, m3, m4, m5 = st.columns(5)
+        # ---------- Metrics ----------
+        m1, m2, m3, m4, m5, m6 = st.columns(6)
 
         m1.metric("Cumulative tons cut", f"{farm['tons_cut']:.2f}")
         m2.metric("% cut", f"{pct_cut_actual:.2f}%")
-        m3.metric("Tons to cut this round", f"{this_round_cut:.2f}")
-        m4.metric("Bins required (this round)", f"{bins_required:.2f}")
-        m5.metric("Days required", f"{days_required:.2f}")
+        m3.metric("Tons remaining", f"{tons_remaining:.2f}")
+        m4.metric("Tons to cut this round", f"{this_round_cut:.2f}")
+        m5.metric("Bins required (this round)", f"{bins_required:.2f}")
+        m6.metric("Days required", f"{days_required:.2f}")
