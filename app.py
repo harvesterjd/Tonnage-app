@@ -4,42 +4,35 @@ st.set_page_config(page_title="Farm Tonnage & Bin Planning", layout="wide")
 st.title("Farm Tonnage & Bin Planning")
 
 # -------------------------
-# Init session state
+# Session state init
 # -------------------------
 if "farms" not in st.session_state:
     st.session_state.farms = [
         {
             "name": "Farm 1",
             "total_tons": 1000.0,
+            "tons_cut": 0.0,
             "target_pct": 20.0,
             "bin_weight": 6.0,
             "bins_per_day": 10.0,
         }
     ]
 
-if "tons_cut" not in st.session_state:
-    st.session_state.tons_cut = {0: 0.0}
-
-if "tons_cut_input" not in st.session_state:
-    st.session_state.tons_cut_input = {0: 0.0}
-
 
 # -------------------------
 # Add farm
 # -------------------------
 if st.button("+ Add farm"):
-    idx = len(st.session_state.farms)
     st.session_state.farms.append(
         {
-            "name": f"Farm {idx + 1}",
+            "name": f"Farm {len(st.session_state.farms) + 1}",
             "total_tons": 1000.0,
+            "tons_cut": 0.0,
             "target_pct": 20.0,
             "bin_weight": 6.0,
             "bins_per_day": 10.0,
         }
     )
-    st.session_state.tons_cut[idx] = 0.0
-    st.session_state.tons_cut_input[idx] = 0.0
 
 
 # -------------------------
@@ -53,39 +46,55 @@ for idx, tab in enumerate(tabs):
     with tab:
         st.subheader(farm["name"])
 
-        farm["total_tons"] = st.number_input(
-            "Total tons",
-            value=farm["total_tons"],
-            step=1.0,
-            key=f"total_{idx}",
-        )
+        with st.form(key=f"farm_form_{idx}"):
 
-        farm["target_pct"] = st.number_input(
-            "Target % to remove",
-            value=farm["target_pct"],
-            step=0.1,
-            format="%.2f",
-            key=f"target_{idx}",
-        )
+            farm["total_tons"] = st.number_input(
+                "Total tons",
+                value=farm["total_tons"],
+                step=1.0,
+            )
 
-        # Apply percentage (explicit overwrite)
-        if st.button("Apply %", key=f"apply_{idx}"):
-            calculated = farm["total_tons"] * farm["target_pct"] / 100
-            st.session_state.tons_cut[idx] = calculated
-            st.session_state.tons_cut_input[idx] = calculated
+            farm["target_pct"] = st.number_input(
+                "Target % to remove",
+                value=farm["target_pct"],
+                step=0.1,
+                format="%.2f",
+            )
 
-        # Manual entry (updates stored value)
-        st.session_state.tons_cut_input[idx] = st.number_input(
-            "Tons cut",
-            value=st.session_state.tons_cut_input[idx],
-            step=1.0,
-            format="%.2f",
-            key=f"cut_input_{idx}",
-        )
+            farm["tons_cut"] = st.number_input(
+                "Tons cut",
+                value=farm["tons_cut"],
+                step=1.0,
+                format="%.2f",
+            )
 
-        st.session_state.tons_cut[idx] = st.session_state.tons_cut_input[idx]
+            farm["bin_weight"] = st.number_input(
+                "Bin weight (tons)",
+                value=farm["bin_weight"],
+                step=0.1,
+                format="%.2f",
+            )
 
-        tons_remaining = farm["total_tons"] - st.session_state.tons_cut[idx]
+            farm["bins_per_day"] = st.number_input(
+                "Bins per day",
+                value=farm["bins_per_day"],
+                step=0.1,
+                format="%.2f",
+            )
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                apply_pct = st.form_submit_button("Apply %")
+
+            with col2:
+                save_manual = st.form_submit_button("Save Manual Tons Cut")
+
+        # ---- FORM LOGIC (runs once, correctly) ----
+        if apply_pct:
+            farm["tons_cut"] = farm["total_tons"] * farm["target_pct"] / 100
+
+        tons_remaining = farm["total_tons"] - farm["tons_cut"]
         pct_remaining = (
             (tons_remaining / farm["total_tons"]) * 100
             if farm["total_tons"] > 0
@@ -95,26 +104,8 @@ for idx, tab in enumerate(tabs):
         st.metric("Tons remaining", f"{tons_remaining:.2f}")
         st.metric("% remaining", f"{pct_remaining:.2f}%")
 
-        st.divider()
-
-        farm["bin_weight"] = st.number_input(
-            "Bin weight (tons)",
-            value=farm["bin_weight"],
-            step=0.1,
-            format="%.2f",
-            key=f"bin_weight_{idx}",
-        )
-
-        farm["bins_per_day"] = st.number_input(
-            "Bins per day",
-            value=farm["bins_per_day"],
-            step=0.1,
-            format="%.2f",
-            key=f"bins_day_{idx}",
-        )
-
         bins_required = (
-            st.session_state.tons_cut[idx] / farm["bin_weight"]
+            farm["tons_cut"] / farm["bin_weight"]
             if farm["bin_weight"] > 0
             else 0
         )
