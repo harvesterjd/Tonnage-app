@@ -4,7 +4,7 @@ st.set_page_config(page_title="Farm Tonnage & Bin Planning", layout="wide")
 st.title("Farm Tonnage & Bin Planning")
 
 # -------------------------
-# Initialize session state
+# Init session state
 # -------------------------
 if "farms" not in st.session_state:
     st.session_state.farms = [
@@ -19,6 +19,9 @@ if "farms" not in st.session_state:
 
 if "tons_cut" not in st.session_state:
     st.session_state.tons_cut = {0: 0.0}
+
+if "tons_cut_input" not in st.session_state:
+    st.session_state.tons_cut_input = {0: 0.0}
 
 
 # -------------------------
@@ -36,6 +39,7 @@ if st.button("+ Add farm"):
         }
     )
     st.session_state.tons_cut[idx] = 0.0
+    st.session_state.tons_cut_input[idx] = 0.0
 
 
 # -------------------------
@@ -64,20 +68,22 @@ for idx, tab in enumerate(tabs):
             key=f"target_{idx}",
         )
 
-        # Apply percentage (explicit action)
+        # Apply percentage (explicit overwrite)
         if st.button("Apply %", key=f"apply_{idx}"):
-            st.session_state.tons_cut[idx] = (
-                farm["total_tons"] * farm["target_pct"] / 100
-            )
+            calculated = farm["total_tons"] * farm["target_pct"] / 100
+            st.session_state.tons_cut[idx] = calculated
+            st.session_state.tons_cut_input[idx] = calculated
 
-        # Manual override always allowed
-        st.session_state.tons_cut[idx] = st.number_input(
+        # Manual entry (updates stored value)
+        st.session_state.tons_cut_input[idx] = st.number_input(
             "Tons cut",
-            value=st.session_state.tons_cut[idx],
+            value=st.session_state.tons_cut_input[idx],
             step=1.0,
             format="%.2f",
-            key=f"cut_{idx}",
+            key=f"cut_input_{idx}",
         )
+
+        st.session_state.tons_cut[idx] = st.session_state.tons_cut_input[idx]
 
         tons_remaining = farm["total_tons"] - st.session_state.tons_cut[idx]
         pct_remaining = (
