@@ -17,8 +17,7 @@ target_percent = st.number_input(
     value=20.0,
     step=0.1
 )
-
 tons_cut = total_tons * (target_percent / 100)
 
 st.markdown("---")
-st.metric("Tons cut (calculated)"
+st.metric("Tons cut (calculated)", f"{tons_cut:.2f}")
