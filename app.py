@@ -1,11 +1,10 @@
 import streamlit as st
 
 st.set_page_config(page_title="Farm Tonnage Planner", layout="wide")
-
 st.title("Farm Tonnage & Bin Planning")
 
 # ----------------------
-# Session state
+# Initialize session state
 # ----------------------
 if "farms" not in st.session_state:
     st.session_state.farms = {
@@ -14,19 +13,18 @@ if "farms" not in st.session_state:
             "target_percent": 20.0,
             "tons_cut": 0.0,
             "bin_weight": 1.0,
-            "bins_per_day": 10.0,
-            "mode": "percent"
+            "bins_per_day": 10.0
         }
     }
 
 # ----------------------
-# Add new farm
+# Sidebar: add farm
 # ----------------------
-st.sidebar.header("Manage farms")
+st.sidebar.header("Farms")
 
 if st.sidebar.button("➕ Add farm"):
-    farm_number = len(st.session_state.farms) + 1
-    st.session_state.farms[f"Farm {farm_number}"] = {
+    n = len(st.session_state.farms) + 1
+    st.session_state.farms[f"Farm {n}"] = {
         "total_tons": 0.0,
         "target_percent": 20.0,
         "tons_cut": 0.0,
@@ -34,29 +32,30 @@ if st.sidebar.button("➕ Add farm"):
         "bins_per_day": 10.0
     }
 
-farm_tabs = st.tabs(list(st.session_state.farms.keys()))
+# ----------------------
+# Tabs per farm
+# ----------------------
+tabs = st.tabs(list(st.session_state.farms.keys()))
 
-# ----------------------
-# Farm tabs
-# ----------------------
-for tab, farm_name in zip(farm_tabs, st.session_state.farms.keys()):
+for tab, farm_name in zip(tabs, st.session_state.farms.keys()):
     with tab:
         farm = st.session_state.farms[farm_name]
 
         st.subheader(farm_name)
 
-        col1, col2, col3 = st.columns(3)
+        c1, c2, c3 = st.columns(3)
 
-        with col1:
+        # -------- Inputs --------
+        with c1:
             farm["total_tons"] = st.number_input(
-                "Total tons grown",
+                "Total tons",
                 min_value=0.0,
                 value=farm["total_tons"],
                 step=1.0,
                 key=f"{farm_name}_total"
             )
 
-            farm["target_percent"] = st.number_input(
+            new_percent = st.number_input(
                 "Target % to remove",
                 min_value=0.0,
                 max_value=100.0,
@@ -65,26 +64,22 @@ for tab, farm_name in zip(farm_tabs, st.session_state.farms.keys()):
                 key=f"{farm_name}_percent"
             )
 
-        with col2:
-            calculated_cut = farm["total_tons"] * (farm["target_percent"] / 100)
-
-            farm["tons_cut"] = st.number_input(
-                "Tons cut (editable)",
+        with c2:
+            new_cut = st.number_input(
+                "Tons cut",
                 min_value=0.0,
-                value=calculated_cut if farm["tons_cut"] == 0 else farm["tons_cut"],
+                value=farm["tons_cut"],
                 step=1.0,
                 key=f"{farm_name}_cut"
             )
 
-            tons_remaining = farm["total_tons"] - farm["tons_cut"]
-
-        with col3:
+        with c3:
             farm["bin_weight"] = st.number_input(
                 "Bin weight (tons)",
                 min_value=0.0,
                 value=farm["bin_weight"],
                 step=0.1,
-                key=f"{farm_name}_bin_weight"
+                key=f"{farm_name}_bin"
             )
 
             farm["bins_per_day"] = st.number_input(
@@ -95,9 +90,19 @@ for tab, farm_name in zip(farm_tabs, st.session_state.farms.keys()):
                 key=f"{farm_name}_bins_day"
             )
 
-        # ----------------------
-        # Calculations
-        # ----------------------
+        # -------- Logic (deterministic) --------
+        # If percent changed → recalc tons cut
+        if new_percent != farm["target_percent"]:
+            farm["target_percent"] = new_percent
+            farm["tons_cut"] = farm["total_tons"] * (new_percent / 100)
+
+        # If tons cut changed → accept manual override
+        elif new_cut != farm["tons_cut"]:
+            farm["tons_cut"] = new_cut
+
+        # -------- Calculations --------
+        tons_remaining = farm["total_tons"] - farm["tons_cut"]
+
         percent_cut = (
             (farm["tons_cut"] / farm["total_tons"]) * 100
             if farm["total_tons"] > 0 else 0
@@ -113,9 +118,7 @@ for tab, farm_name in zip(farm_tabs, st.session_state.farms.keys()):
             if farm["bins_per_day"] > 0 else 0
         )
 
-        # ----------------------
-        # Results
-        # ----------------------
+        # -------- Results --------
         st.markdown("---")
         r1, r2, r3, r4 = st.columns(4)
 
