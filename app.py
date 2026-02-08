@@ -44,8 +44,6 @@ for tab, (farm_name, farm) in zip(tabs, st.session_state.farms.items()):
     with tab:
         st.subheader(farm_name)
 
-        cut_key = f"{farm_name}_cut"
-        lock_key = f"{farm_name}_locked"
 
         c1, c2, c3 = st.columns(3)
 
@@ -110,7 +108,15 @@ for tab, (farm_name, farm) in zip(tabs, st.session_state.farms.items()):
                 step=0.1,
                 key=f"{farm_name}_bin_weight"
             )
+cut_key = f"{farm_name}_cut"
+lock_key = f"{farm_name}_locked"
 
+# ---- SAFETY INITIALISATION (CRITICAL) ----
+if cut_key not in st.session_state:
+    st.session_state[cut_key] = 0.0
+
+if lock_key not in st.session_state:
+    st.session_state[lock_key] = False
             farm["bins_per_day"] = st.number_input(
                 "Bins per day",
                 min_value=0.1,
