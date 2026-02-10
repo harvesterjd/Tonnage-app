@@ -1,9 +1,12 @@
 
 import streamlit as st
-st.session_state.clear()
 
 st.set_page_config(page_title="Farm Tonnage & Bin Planning", layout="wide")
 st.title("Farm Tonnage & Bin Planning")
+
+# ---------- HARD RESET SAFETY (remove after first run if you want) ----------
+# Uncomment next line ONCE if Streamlit complains about missing keys
+# st.session_state.clear()
 
 # ---------- Session state ----------
 if "farms" not in st.session_state:
@@ -20,9 +23,10 @@ if "farms" not in st.session_state:
 
 # ---------- Add farm ----------
 if st.button("➕ Add farm"):
+    idx = len(st.session_state.farms)
     st.session_state.farms.append(
         {
-            "farm_name": f"Farm {len(st.session_state.farms) + 1}",
+            "farm_name": f"Farm {idx + 1}",
             "total_tons": 10000.0,
             "tons_cut": 0.0,
             "target_pct": 10.0,
@@ -34,13 +38,14 @@ if st.button("➕ Add farm"):
 # ---------- Tabs ----------
 tabs = st.tabs([farm["farm_name"] for farm in st.session_state.farms])
 
+# ---------- Per farm ----------
 for idx, tab in enumerate(tabs):
     farm = st.session_state.farms[idx]
 
     with tab:
         st.subheader("Farm details")
 
-        # ---------- Farm identity ----------
+        # ---- Farm name ----
         farm["farm_name"] = st.text_input(
             "Farm number / name",
             value=farm["farm_name"],
@@ -88,8 +93,8 @@ for idx, tab in enumerate(tabs):
                 key=f"binsday_{idx}",
             )
 
-        # ---------- Manual cumulative cut ----------
-        farm["tons_cut"] = st.number_input(
+        # ---------- Tons cut (widget-safe) ----------
+        st.number_input(
             "Tons cut (cumulative)",
             min_value=0.0,
             max_value=farm["total_tons"],
@@ -99,7 +104,9 @@ for idx, tab in enumerate(tabs):
             key=f"cut_{idx}",
         )
 
-        # ---------- Calculations ----------
+        farm["tons_cut"] = st.session_state[f"cut_{idx}"]
+
+        # ---------- LIVE CALCULATIONS ----------
         tons_remaining = max(
             farm["total_tons"] - farm["tons_cut"],
             0.0,
@@ -134,10 +141,12 @@ for idx, tab in enumerate(tabs):
                     farm["tons_cut"] + projected_cut,
                     farm["total_tons"],
                 )
+                st.session_state[f"cut_{idx}"] = farm["tons_cut"]
 
         with b2:
             if st.button("Reset cumulative tons", key=f"reset_{idx}"):
                 farm["tons_cut"] = 0.0
+                st.session_state[f"cut_{idx}"] = 0.0
 
         # ---------- Metrics ----------
         m1, m2, m3, m4, m5 = st.columns(5)
@@ -147,3 +156,5 @@ for idx, tab in enumerate(tabs):
         m3.metric("Tons remaining", f"{tons_remaining:.2f}")
         m4.metric("Projected tons to remove", f"{projected_cut:.2f}")
         m5.metric("Days required", f"{days_required:.2f}")
+
+      
