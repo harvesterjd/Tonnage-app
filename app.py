@@ -92,13 +92,20 @@ for idx, tab in enumerate(tabs):
             key=f"cut_{idx}",
         )
 
-        # ---------- Apply % button ----------
-        if st.button("Apply %", key=f"apply_{idx}"):
-            additional_cut = farm["total_tons"] * (farm["target_pct"] / 100)
-            farm["tons_cut"] = min(
-                farm["tons_cut"] + additional_cut,
-                farm["total_tons"],
-            )
+        # ---------- Buttons ----------
+        bcol1, bcol2 = st.columns(2)
+
+        with bcol1:
+            if st.button("Apply %", key=f"apply_{idx}"):
+                additional_cut = farm["total_tons"] * (farm["target_pct"] / 100)
+                farm["tons_cut"] = min(
+                    farm["tons_cut"] + additional_cut,
+                    farm["total_tons"],
+                )
+
+        with bcol2:
+            if st.button("Reset cumulative tons", key=f"reset_{idx}"):
+                farm["tons_cut"] = 0.0
 
         # ---------- Calculations ----------
         tons_remaining = max(
@@ -135,3 +142,4 @@ for idx, tab in enumerate(tabs):
         m4.metric("Tons to cut this round", f"{this_round_cut:.2f}")
         m5.metric("Bins required (this round)", f"{bins_required:.2f}")
         m6.metric("Days required", f"{days_required:.2f}")
+
