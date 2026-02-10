@@ -1,10 +1,11 @@
+
 import streamlit as st
 
 st.set_page_config(page_title="Farm Tonnage & Bin Planning", layout="wide")
 
 st.title("Farm Tonnage & Bin Planning")
 
-# ---------- Session state setup ----------
+# ---------- Session state ----------
 if "farms" not in st.session_state:
     st.session_state.farms = [
         {
@@ -33,7 +34,6 @@ if st.button("➕ Add farm"):
 # ---------- Tabs ----------
 tabs = st.tabs([farm["name"] for farm in st.session_state.farms])
 
-# ---------- Farm UI ----------
 for idx, tab in enumerate(tabs):
     farm = st.session_state.farms[idx]
 
@@ -53,7 +53,7 @@ for idx, tab in enumerate(tabs):
             )
 
             farm["target_pct"] = st.number_input(
-                "Target % to remove (this round)",
+                "Target % to remove",
                 min_value=0.0,
                 max_value=100.0,
                 value=farm["target_pct"],
@@ -81,9 +81,9 @@ for idx, tab in enumerate(tabs):
                 key=f"binsday_{idx}",
             )
 
-        # ---------- Manual tons cut ----------
+        # ---------- Manual cumulative tons cut ----------
         farm["tons_cut"] = st.number_input(
-            "Cumulative tons cut (manual override allowed)",
+            "Total tons cut (cumulative)",
             min_value=0.0,
             max_value=farm["total_tons"],
             value=farm["tons_cut"],
@@ -119,10 +119,11 @@ for idx, tab in enumerate(tabs):
             else 0.0
         )
 
-        this_round_cut = farm["total_tons"] * (farm["target_pct"] / 100)
+        # Planning calculations (based on target %)
+        planned_cut = farm["total_tons"] * (farm["target_pct"] / 100)
 
         bins_required = (
-            this_round_cut / farm["bin_weight"]
+            planned_cut / farm["bin_weight"]
             if farm["bin_weight"] > 0
             else 0.0
         )
@@ -134,12 +135,10 @@ for idx, tab in enumerate(tabs):
         )
 
         # ---------- Metrics ----------
-        m1, m2, m3, m4, m5, m6 = st.columns(6)
+        m1, m2, m3, m4, m5 = st.columns(5)
 
-        m1.metric("Cumulative tons cut", f"{farm['tons_cut']:.2f}")
+        m1.metric("Total tons cut", f"{farm['tons_cut']:.2f}")
         m2.metric("% cut", f"{pct_cut_actual:.2f}%")
         m3.metric("Tons remaining", f"{tons_remaining:.2f}")
-        m4.metric("Tons to cut this round", f"{this_round_cut:.2f}")
-        m5.metric("Bins required (this round)", f"{bins_required:.2f}")
-        m6.metric("Days required", f"{days_required:.2f}")
-
+        m4.metric("Bins required (target %)", f"{bins_required:.2f}")
+        m5.metric("Days required", f"{days_required:.2f}")
