@@ -1,5 +1,6 @@
 
 import streamlit as st
+st.session_state.clear()
 
 st.set_page_config(page_title="Farm Tonnage & Bin Planning", layout="wide")
 st.title("Farm Tonnage & Bin Planning")
