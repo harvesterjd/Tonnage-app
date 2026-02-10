@@ -2,19 +2,18 @@
 import streamlit as st
 
 st.set_page_config(page_title="Farm Tonnage & Bin Planning", layout="wide")
-
 st.title("Farm Tonnage & Bin Planning")
 
 # ---------- Session state ----------
 if "farms" not in st.session_state:
     st.session_state.farms = [
         {
-            "name": "Farm 1",
+            "farm_name": "Farm 1",
             "total_tons": 10000.0,
             "tons_cut": 0.0,
+            "target_pct": 10.0,
             "bin_weight": 10.0,
             "bins_per_day": 20.0,
-            "target_pct": 10.0,
         }
     ]
 
@@ -22,23 +21,30 @@ if "farms" not in st.session_state:
 if st.button("➕ Add farm"):
     st.session_state.farms.append(
         {
-            "name": f"Farm {len(st.session_state.farms) + 1}",
+            "farm_name": f"Farm {len(st.session_state.farms) + 1}",
             "total_tons": 10000.0,
             "tons_cut": 0.0,
+            "target_pct": 10.0,
             "bin_weight": 10.0,
             "bins_per_day": 20.0,
-            "target_pct": 10.0,
         }
     )
 
 # ---------- Tabs ----------
-tabs = st.tabs([farm["name"] for farm in st.session_state.farms])
+tabs = st.tabs([farm["farm_name"] for farm in st.session_state.farms])
 
 for idx, tab in enumerate(tabs):
     farm = st.session_state.farms[idx]
 
     with tab:
-        st.subheader(farm["name"])
+        st.subheader("Farm details")
+
+        # ---------- Farm identity ----------
+        farm["farm_name"] = st.text_input(
+            "Farm number / name",
+            value=farm["farm_name"],
+            key=f"name_{idx}",
+        )
 
         col1, col2 = st.columns(2)
 
@@ -53,7 +59,7 @@ for idx, tab in enumerate(tabs):
             )
 
             farm["target_pct"] = st.number_input(
-                "Target % to remove",
+                "Target % to remove (of remaining)",
                 min_value=0.0,
                 max_value=100.0,
                 value=farm["target_pct"],
@@ -81,9 +87,9 @@ for idx, tab in enumerate(tabs):
                 key=f"binsday_{idx}",
             )
 
-        # ---------- Manual cumulative tons cut ----------
+        # ---------- Manual cumulative cut ----------
         farm["tons_cut"] = st.number_input(
-            "Total tons cut (cumulative)",
+            "Tons cut (cumulative)",
             min_value=0.0,
             max_value=farm["total_tons"],
             value=farm["tons_cut"],
@@ -91,21 +97,6 @@ for idx, tab in enumerate(tabs):
             format="%.2f",
             key=f"cut_{idx}",
         )
-
-        # ---------- Buttons ----------
-        bcol1, bcol2 = st.columns(2)
-
-        with bcol1:
-            if st.button("Apply %", key=f"apply_{idx}"):
-                additional_cut = farm["total_tons"] * (farm["target_pct"] / 100)
-                farm["tons_cut"] = min(
-                    farm["tons_cut"] + additional_cut,
-                    farm["total_tons"],
-                )
-
-        with bcol2:
-            if st.button("Reset cumulative tons", key=f"reset_{idx}"):
-                farm["tons_cut"] = 0.0
 
         # ---------- Calculations ----------
         tons_remaining = max(
@@ -119,11 +110,10 @@ for idx, tab in enumerate(tabs):
             else 0.0
         )
 
-        # Planning calculations (based on target %)
-        planned_cut = farm["total_tons"] * (farm["target_pct"] / 100)
+        projected_cut = tons_remaining * (farm["target_pct"] / 100)
 
         bins_required = (
-            planned_cut / farm["bin_weight"]
+            projected_cut / farm["bin_weight"]
             if farm["bin_weight"] > 0
             else 0.0
         )
@@ -134,11 +124,25 @@ for idx, tab in enumerate(tabs):
             else 0.0
         )
 
+        # ---------- Buttons ----------
+        b1, b2 = st.columns(2)
+
+        with b1:
+            if st.button("Apply target %", key=f"apply_{idx}"):
+                farm["tons_cut"] = min(
+                    farm["tons_cut"] + projected_cut,
+                    farm["total_tons"],
+                )
+
+        with b2:
+            if st.button("Reset cumulative tons", key=f"reset_{idx}"):
+                farm["tons_cut"] = 0.0
+
         # ---------- Metrics ----------
         m1, m2, m3, m4, m5 = st.columns(5)
 
-        m1.metric("Total tons cut", f"{farm['tons_cut']:.2f}")
+        m1.metric("Tons cut (total)", f"{farm['tons_cut']:.2f}")
         m2.metric("% cut", f"{pct_cut_actual:.2f}%")
         m3.metric("Tons remaining", f"{tons_remaining:.2f}")
-        m4.metric("Bins required (target %)", f"{bins_required:.2f}")
+        m4.metric("Projected tons to remove", f"{projected_cut:.2f}")
         m5.metric("Days required", f"{days_required:.2f}")
