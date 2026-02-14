@@ -5,20 +5,19 @@ import uuid
 st.title("Farm Tonnage Tracker")
 
 # -------------------------------------------------
-# Initialize farm list
+# Init
 # -------------------------------------------------
 if "farms" not in st.session_state:
     st.session_state.farms = []
 
 # -------------------------------------------------
-# Add Farm Section
+# Add Farm
 # -------------------------------------------------
 st.subheader("Add New Farm")
 new_farm_name = st.text_input("Farm Number")
 
 if st.button("Add Farm"):
     if new_farm_name.strip():
-
         farm_id = str(uuid.uuid4())
 
         st.session_state.farms.append({
@@ -26,8 +25,30 @@ if st.button("Add Farm"):
             "name": new_farm_name
         })
 
+        # Initialize widget keys directly
+        st.session_state[f"total_{farm_id}"] = 0.0
+        st.session_state[f"cut_{farm_id}"] = 0.0
+        st.session_state[f"target_{farm_id}"] = 0.0
+        st.session_state[f"tpb_{farm_id}"] = 0.0
+        st.session_state[f"bpd_{farm_id}"] = 0.0
+        st.session_state[f"days_{farm_id}"] = 0
+
 # -------------------------------------------------
-# Main Farm Section
+# Callback (IMPORTANT)
+# -------------------------------------------------
+def add_day(farm_id):
+    daily = (
+        st.session_state[f"tpb_{farm_id}"] *
+        st.session_state[f"bpd_{farm_id}"]
+    )
+
+    st.session_state[f"cut_{farm_id}"] = min(
+        st.session_state[f"cut_{farm_id}"] + daily,
+        st.session_state[f"total_{farm_id}"]
+    )
+
+# -------------------------------------------------
+# Main Section
 # -------------------------------------------------
 if st.session_state.farms:
 
@@ -37,104 +58,38 @@ if st.session_state.farms:
     farm = next(f for f in st.session_state.farms if f["name"] == selected_name)
     farm_id = farm["id"]
 
-    # -------------------------------------------------
-    # Ensure internal storage keys exist
-    # -------------------------------------------------
-    defaults = {
-        f"total_val_{farm_id}": 0.0,
-        f"cut_val_{farm_id}": 0.0,
-        f"target_val_{farm_id}": 0.0,
-        f"tpb_val_{farm_id}": 0.0,
-        f"bpd_val_{farm_id}": 0.0,
-        f"days_val_{farm_id}": 0,
-    }
-
-    for key, default in defaults.items():
-        if key not in st.session_state:
-            st.session_state[key] = default
-
     st.subheader(f"Farm {selected_name}")
 
-    # -------------------------------------------------
-    # Inputs (Safe Pattern)
-    # -------------------------------------------------
-    total = st.number_input(
-        "Total Tonnes",
-        min_value=0.0,
-        value=st.session_state[f"total_val_{farm_id}"],
-        key=f"total_widget_{farm_id}"
-    )
-    st.session_state[f"total_val_{farm_id}"] = total
-
-    cut = st.number_input(
-        "Tonnes Cut",
-        min_value=0.0,
-        value=st.session_state[f"cut_val_{farm_id}"],
-        key=f"cut_widget_{farm_id}"
-    )
-    st.session_state[f"cut_val_{farm_id}"] = cut
-
-    target = st.number_input(
-        "Target %",
-        min_value=0.0,
-        max_value=100.0,
-        value=st.session_state[f"target_val_{farm_id}"],
-        key=f"target_widget_{farm_id}"
-    )
-    st.session_state[f"target_val_{farm_id}"] = target
+    # IMPORTANT: No value= used anywhere
+    st.number_input("Total Tonnes", min_value=0.0, key=f"total_{farm_id}")
+    st.number_input("Tonnes Cut", min_value=0.0, key=f"cut_{farm_id}")
+    st.number_input("Target %", min_value=0.0, max_value=100.0, key=f"target_{farm_id}")
 
     st.divider()
 
-    tpb = st.number_input(
-        "Tonnes per Bin",
-        min_value=0.0,
-        value=st.session_state[f"tpb_val_{farm_id}"],
-        key=f"tpb_widget_{farm_id}"
+    st.number_input("Tonnes per Bin", min_value=0.0, key=f"tpb_{farm_id}")
+    st.number_input("Bins per Day", min_value=0.0, key=f"bpd_{farm_id}")
+
+    # Button uses callback
+    st.button(
+        "Add One Day Production",
+        on_click=add_day,
+        args=(farm_id,)
     )
-    st.session_state[f"tpb_val_{farm_id}"] = tpb
-
-    bpd = st.number_input(
-        "Bins per Day",
-        min_value=0.0,
-        value=st.session_state[f"bpd_val_{farm_id}"],
-        key=f"bpd_widget_{farm_id}"
-    )
-    st.session_state[f"bpd_val_{farm_id}"] = bpd
-
-    # -------------------------------------------------
-    # Add One Day Production (Safe Update)
-    # -------------------------------------------------
-    if st.button("Add One Day Production"):
-
-        daily = tpb * bpd
-
-        st.session_state[f"cut_val_{farm_id}"] = min(
-            st.session_state[f"cut_val_{farm_id}"] + daily,
-            st.session_state[f"total_val_{farm_id}"]
-        )
-
-        st.rerun()
 
     st.divider()
 
-    days = st.number_input(
-        "Days Planned (Projection)",
-        min_value=0,
-        step=1,
-        value=st.session_state[f"days_val_{farm_id}"],
-        key=f"days_widget_{farm_id}"
-    )
-    st.session_state[f"days_val_{farm_id}"] = days
+    st.number_input("Days Planned (Projection)", min_value=0, step=1, key=f"days_{farm_id}")
 
     # -------------------------------------------------
     # Calculations
     # -------------------------------------------------
-    total = st.session_state[f"total_val_{farm_id}"]
-    cut = st.session_state[f"cut_val_{farm_id}"]
-    target = st.session_state[f"target_val_{farm_id}"]
-    tpb = st.session_state[f"tpb_val_{farm_id}"]
-    bpd = st.session_state[f"bpd_val_{farm_id}"]
-    days = st.session_state[f"days_val_{farm_id}"]
+    total = st.session_state[f"total_{farm_id}"]
+    cut = st.session_state[f"cut_{farm_id}"]
+    target = st.session_state[f"target_{farm_id}"]
+    tpb = st.session_state[f"tpb_{farm_id}"]
+    bpd = st.session_state[f"bpd_{farm_id}"]
+    days = st.session_state[f"days_{farm_id}"]
 
     remaining = total - cut
     percent_cut = (cut / total * 100) if total > 0 else 0
@@ -149,16 +104,13 @@ if st.session_state.farms:
     projected_total_cut = min(cut + projected_tonnes, total)
     projected_percent = (projected_total_cut / total * 100) if total > 0 else 0
 
-    # -------------------------------------------------
-    # Display Results
-    # -------------------------------------------------
     st.write(f"Tonnes Remaining: {remaining:.2f}")
     st.write(f"% Cut: {percent_cut:.2f}%")
 
     st.divider()
 
     st.write(f"Target Tonnes ({target}%): {target_tonnes:.2f}")
-    st.write(f"Tonnes Required to Reach Target: {tonnes_needed:.2f}")
+    st.write(f"Tonnes Required: {tonnes_needed:.2f}")
     st.write(f"Bins Required: {math.ceil(bins_required) if bins_required > 0 else 0}")
     st.write(f"Days Required: {days_required:.2f}")
 
