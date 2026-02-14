@@ -25,7 +25,7 @@ if st.button("Add Farm"):
             "name": new_farm_name
         })
 
-        # Initialize widget keys directly
+        # Initialize widget keys
         st.session_state[f"total_{farm_id}"] = 0.0
         st.session_state[f"cut_{farm_id}"] = 0.0
         st.session_state[f"target_{farm_id}"] = 0.0
@@ -34,7 +34,7 @@ if st.button("Add Farm"):
         st.session_state[f"days_{farm_id}"] = 0
 
 # -------------------------------------------------
-# Callback (IMPORTANT)
+# Callback Functions
 # -------------------------------------------------
 def add_day(farm_id):
     daily = (
@@ -47,6 +47,30 @@ def add_day(farm_id):
         st.session_state[f"total_{farm_id}"]
     )
 
+def delete_farm(farm_id):
+
+    # Remove farm from list
+    st.session_state.farms = [
+        farm for farm in st.session_state.farms
+        if farm["id"] != farm_id
+    ]
+
+    # Remove all related session keys
+    keys_to_remove = [
+        f"total_{farm_id}",
+        f"cut_{farm_id}",
+        f"target_{farm_id}",
+        f"tpb_{farm_id}",
+        f"bpd_{farm_id}",
+        f"days_{farm_id}",
+    ]
+
+    for key in keys_to_remove:
+        if key in st.session_state:
+            del st.session_state[key]
+
+    st.rerun()
+
 # -------------------------------------------------
 # Main Section
 # -------------------------------------------------
@@ -58,9 +82,20 @@ if st.session_state.farms:
     farm = next(f for f in st.session_state.farms if f["name"] == selected_name)
     farm_id = farm["id"]
 
-    st.subheader(f"Farm {selected_name}")
+    col1, col2 = st.columns([3, 1])
 
-    # IMPORTANT: No value= used anywhere
+    with col1:
+        st.subheader(f"Farm {selected_name}")
+
+    with col2:
+        st.button(
+            "Delete Farm",
+            on_click=delete_farm,
+            args=(farm_id,),
+            type="secondary"
+        )
+
+    # Inputs
     st.number_input("Total Tonnes", min_value=0.0, key=f"total_{farm_id}")
     st.number_input("Tonnes Cut", min_value=0.0, key=f"cut_{farm_id}")
     st.number_input("Target %", min_value=0.0, max_value=100.0, key=f"target_{farm_id}")
@@ -70,7 +105,6 @@ if st.session_state.farms:
     st.number_input("Tonnes per Bin", min_value=0.0, key=f"tpb_{farm_id}")
     st.number_input("Bins per Day", min_value=0.0, key=f"bpd_{farm_id}")
 
-    # Button uses callback
     st.button(
         "Add One Day Production",
         on_click=add_day,
