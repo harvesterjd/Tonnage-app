@@ -1,74 +1,69 @@
 import streamlit as st
 
-st.set_page_config(page_title="Farm Tonnage Calculator")
+st.title("Farm Tonnage Tracker")
 
-st.title("Farm Tonnage Calculator")
-
-# -----------------------
-# SESSION STATE
-# -----------------------
-
+# -----------------------------
+# 1️⃣ Initialize session state
+# -----------------------------
 if "farms" not in st.session_state:
-    st.session_state.farms = [
-        {"name": "Farm 1", "total": 0.0, "cut": 0.0}
-    ]
+    st.session_state.farms = []
 
-# -----------------------
-# ADD FARM BUTTON
-# -----------------------
+# -----------------------------
+# 2️⃣ Add new farm section
+# -----------------------------
+st.subheader("Add New Farm")
 
-if st.button("➕ Add Farm"):
-    farm_number = len(st.session_state.farms) + 1
-    st.session_state.farms.append(
-        {"name": f"Farm {farm_number}", "total": 0.0, "cut": 0.0}
-    )
+new_farm_name = st.text_input("Farm Number")
 
-# -----------------------
-# CREATE TABS
-# -----------------------
+if st.button("Add Farm"):
+    if new_farm_name != "":
+        st.session_state.farms.append({
+            "name": new_farm_name,
+            "total": 0.0,
+            "cut": 0.0
+        })
+        st.success(f"Farm {new_farm_name} added!")
 
-tabs = st.tabs([farm["name"] for farm in st.session_state.farms])
+# -----------------------------
+# 3️⃣ Show farms in tabs
+# -----------------------------
+if len(st.session_state.farms) > 0:
 
-# -----------------------
-# FARM LOOP
-# -----------------------
+    tabs = st.tabs([farm["name"] for farm in st.session_state.farms])
 
-for i, farm in enumerate(st.session_state.farms):
+    for i, farm in enumerate(st.session_state.farms):
 
-    with tabs[i]:
+        with tabs[i]:
 
-        # Inputs
-        farm["name"] = st.text_input(
-            "Farm Number / Name",
-            farm["name"],
-            key=f"name_{i}"
-        )
+            st.subheader(f"Farm {farm['name']}")
 
-        farm["total"] = st.number_input(
-            "Total Tonnes",
-            min_value=0.0,
-            value=farm["total"],
-            key=f"total_{i}"
-        )
+            total = st.number_input(
+                "Total Tonnes",
+                min_value=0.0,
+                value=farm["total"],
+                key=f"total_{i}"
+            )
 
-        farm["cut"] = st.number_input(
-            "Tonnes Cut",
-            min_value=0.0,
-            value=farm["cut"],
-            key=f"cut_{i}"
-        )
+            cut = st.number_input(
+                "Tonnes Cut",
+                min_value=0.0,
+                value=farm["cut"],
+                key=f"cut_{i}"
+            )
 
-        # Calculations
-        tonnes_remaining = farm["total"] - farm["cut"]
+            remaining = total - cut
 
-        if farm["total"] > 0:
-            percent_cut = (farm["cut"] / farm["total"]) * 100
-        else:
-            percent_cut = 0.0
+            if total > 0:
+                percent_cut = (cut / total) * 100
+            else:
+                percent_cut = 0
 
-        if tonnes_remaining < 0:
-            tonnes_remaining = 0.0
+            st.write(f"Tonnes Remaining: {remaining}")
+            st.write(f"% Cut: {percent_cut:.2f}%")
 
-        # Outputs
-        st.write("Tonnes Remaining:", tonnes_remaining)
-        st.write("Percent Cut:", percent_cut)
+            # Save updated values
+            st.session_state.farms[i]["total"] = total
+            st.session_state.farms[i]["cut"] = cut
+
+else:
+    st.info("No farms added yet.")
