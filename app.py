@@ -1,33 +1,15 @@
 import streamlit as st
 
-st.set_page_config(page_title="Farm Tonnage Calculator")
-
 st.title("Farm Tonnage Calculator")
 
-# -----------------------
-# INPUT BOXES
-# -----------------------
-
+# Inputs
 farm_number = st.text_input("Farm Number / Name")
 
-total_tonnes = st.number_input(
-    "Total Tonnes",
-    min_value=0.0,
-    value=0.0,
-    step=100.0,
-)
+total_tonnes = st.number_input("Total Tonnes", min_value=0.0)
 
-tonnes_cut = st.number_input(
-    "Tonnes Cut",
-    min_value=0.0,
-    value=0.0,
-    step=10.0,
-)
+tonnes_cut = st.number_input("Tonnes Cut", min_value=0.0)
 
-# -----------------------
-# CALCULATIONS
-# -----------------------
-
+# Calculations
 tonnes_remaining = total_tonnes - tonnes_cut
 
 if total_tonnes > 0:
@@ -35,22 +17,6 @@ if total_tonnes > 0:
 else:
     percent_cut = 0.0
 
-# Prevent negative remaining
-if tonnes_remaining < 0:
-    tonnes_remaining = 0.0
-
-# -----------------------
-# OUTPUT BOXES
-# -----------------------
-
-st.number_input(
-    "Tonnes Remaining",
-    value=tonnes_remaining,
-    disabled=True,
-)
-
-st.number_input(
-    "% Cut",
-    value=percent_cut,
-    disabled=True,
-)
+# Outputs
+st.write("Tonnes Remaining:", tonnes_remaining)
+st.write("Percent Cut:", percent_cut)
