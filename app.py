@@ -1,4 +1,5 @@
 import streamlit as st
+import math
 
 st.title("Farm Tonnage Tracker")
 
@@ -64,24 +65,57 @@ if len(st.session_state.farms) > 0:
                 key=f"target_{i}"
             )
 
+            st.divider()
+
+            tonnes_per_bin = st.number_input(
+                "Tonnes per Bin",
+                min_value=0.0,
+                value=0.0,
+                key=f"tpb_{i}"
+            )
+
+            bins_per_day = st.number_input(
+                "Bins per Day",
+                min_value=0.0,
+                value=0.0,
+                key=f"bpd_{i}"
+            )
+
             # ---------------- Calculations ----------------
+
             remaining = total - cut
             percent_cut = (cut / total * 100) if total > 0 else 0
 
             target_tonnes = (total * target_percent / 100)
             tonnes_needed = target_tonnes - cut
-
             if tonnes_needed < 0:
                 tonnes_needed = 0
 
+            # Bin Calculations
+            if tonnes_per_bin > 0:
+                bins_required = tonnes_needed / tonnes_per_bin
+            else:
+                bins_required = 0
+
+            if bins_per_day > 0:
+                days_required = bins_required / bins_per_day
+            else:
+                days_required = 0
+
             # ---------------- Display ----------------
-            st.write(f"Tonnes Remaining: {remaining}")
+
+            st.write(f"Tonnes Remaining: {remaining:.2f}")
             st.write(f"% Cut: {percent_cut:.2f}%")
 
             st.divider()
 
             st.write(f"Target Tonnes ({target_percent}%): {target_tonnes:.2f}")
             st.write(f"Tonnes Required to Reach Target: {tonnes_needed:.2f}")
+
+            st.divider()
+
+            st.write(f"Bins Required: {math.ceil(bins_required) if bins_required > 0 else 0}")
+            st.write(f"Days Required: {days_required:.2f}")
 
             # Save updates
             farm["total"] = total
@@ -90,7 +124,6 @@ if len(st.session_state.farms) > 0:
 
             st.divider()
 
-            # Delete Button
             if st.button("Delete This Farm", key=f"delete_{i}"):
                 st.session_state.farms.pop(i)
                 st.rerun()
