@@ -36,7 +36,9 @@ if st.session_state.growers:
     selected_grower_name = st.selectbox("Select Grower", grower_names)
 
     grower = next(g for g in st.session_state.growers if g["name"] == selected_grower_name)
-    grower_id = grower["id"]
+    st.write("DEBUG grower:", grower)
+st.stop()
+grower_id = grower["id"]
 
     st.divider()
 
