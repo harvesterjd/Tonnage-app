@@ -43,6 +43,7 @@ if len(st.session_state.farms) > 0:
 
             st.subheader(f"Farm {farm['name']}")
 
+            # --- Basic Inputs ---
             total = st.number_input(
                 "Total Tonnes",
                 min_value=0.0,
@@ -67,6 +68,7 @@ if len(st.session_state.farms) > 0:
 
             st.divider()
 
+            # --- Production Inputs ---
             tonnes_per_bin = st.number_input(
                 "Tonnes per Bin",
                 min_value=0.0,
@@ -81,29 +83,49 @@ if len(st.session_state.farms) > 0:
                 key=f"bpd_{i}"
             )
 
-            # ---------------- Calculations ----------------
+            # ---------------- Add One Day Production ----------------
+            if st.button("Add One Day Production", key=f"add_day_{i}"):
 
+                daily_tonnes = bins_per_day * tonnes_per_bin
+                new_cut = farm.get("cut", 0.0) + daily_tonnes
+
+                # Prevent exceeding total
+                if new_cut > total:
+                    new_cut = total
+
+                farm["cut"] = new_cut
+                st.success(f"Added {daily_tonnes:.2f} tonnes to cut total.")
+                st.rerun()
+
+            st.divider()
+
+            # --- Day Projection Tool ---
+            days_planned = st.number_input(
+                "Days Planned (Projection)",
+                min_value=0,
+                value=0,
+                step=1,
+                key=f"days_{i}"
+            )
+
+            # ---------------- Current Calculations ----------------
             remaining = total - cut
             percent_cut = (cut / total * 100) if total > 0 else 0
 
             target_tonnes = (total * target_percent / 100)
-            tonnes_needed = target_tonnes - cut
-            if tonnes_needed < 0:
-                tonnes_needed = 0
+            tonnes_needed = max(target_tonnes - cut, 0)
 
-            # Bin Calculations
-            if tonnes_per_bin > 0:
-                bins_required = tonnes_needed / tonnes_per_bin
-            else:
-                bins_required = 0
+            bins_required = (tonnes_needed / tonnes_per_bin) if tonnes_per_bin > 0 else 0
+            days_required = (bins_required / bins_per_day) if bins_per_day > 0 else 0
 
-            if bins_per_day > 0:
-                days_required = bins_required / bins_per_day
-            else:
-                days_required = 0
+            # ---------------- Projection Calculations ----------------
+            projected_bins = bins_per_day * days_planned
+            projected_tonnes = projected_bins * tonnes_per_bin
+            projected_total_cut = min(cut + projected_tonnes, total)
+
+            projected_percent = (projected_total_cut / total * 100) if total > 0 else 0
 
             # ---------------- Display ----------------
-
             st.write(f"Tonnes Remaining: {remaining:.2f}")
             st.write(f"% Cut: {percent_cut:.2f}%")
 
@@ -111,19 +133,24 @@ if len(st.session_state.farms) > 0:
 
             st.write(f"Target Tonnes ({target_percent}%): {target_tonnes:.2f}")
             st.write(f"Tonnes Required to Reach Target: {tonnes_needed:.2f}")
-
-            st.divider()
-
             st.write(f"Bins Required: {math.ceil(bins_required) if bins_required > 0 else 0}")
             st.write(f"Days Required: {days_required:.2f}")
 
-            # Save updates
+            st.divider()
+
+            st.subheader("Projection Based on Days")
+            st.write(f"Projected Additional Tonnes: {projected_tonnes:.2f}")
+            st.write(f"Projected Total Cut: {projected_total_cut:.2f}")
+            st.write(f"Projected % Cut: {projected_percent:.2f}%")
+
+            # --- Save updates ---
             farm["total"] = total
             farm["cut"] = cut
             farm["target_percent"] = target_percent
 
             st.divider()
 
+            # --- Delete Farm ---
             if st.button("Delete This Farm", key=f"delete_{i}"):
                 st.session_state.farms.pop(i)
                 st.rerun()
