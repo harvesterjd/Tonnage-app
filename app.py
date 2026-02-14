@@ -85,8 +85,7 @@ if len(st.session_state.farms) > 0:
 
             # ---------------- Add One Day Production ----------------
             if st.button("Add One Day Production", key=f"add_day_{i}"):
-            st.write(st.session_state)
-
+           
                 daily_tonnes = bins_per_day * tonnes_per_bin
                 new_cut = farm.get("cut", 0.0) + daily_tonnes
 
