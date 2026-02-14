@@ -1,5 +1,6 @@
 import streamlit as st
 import math
+st.write("Streamlit version:", st.__version__)
 
 st.title("Farm Tonnage Tracker")
 
