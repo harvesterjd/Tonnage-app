@@ -1,150 +1,159 @@
 import streamlit as st
+import math
 
-st.set_page_config(page_title="Tonnage Tracker", layout="wide")
-
-st.title("🚜 Farm Tonnage Tracker")
+st.title("Farm Tonnage Tracker")
 
 # -----------------------------
-# SESSION STATE INITIALISATION
+# 1️⃣ Initialize session state safely
 # -----------------------------
-
 if "farms" not in st.session_state:
     st.session_state.farms = []
 
-if "tonnes_per_bin" not in st.session_state:
-    st.session_state.tonnes_per_bin = 10.0
-
-
-# -----------------------------
-# SIDEBAR – DAILY PRODUCTION
-# -----------------------------
-
-st.sidebar.header("📦 Daily Production")
-
-tonnes_per_bin = st.sidebar.number_input(
-    "Tonnes per Bin",
-    min_value=0.0,
-    value=st.session_state.tonnes_per_bin,
-    step=0.5,
-)
-
-bins_today = st.sidebar.number_input(
-    "Bins Filled Today",
-    min_value=0,
-    value=0,
-    step=1,
-)
-
-daily_tonnes = bins_today * tonnes_per_bin
-
-st.sidebar.write(f"Tonnes Today: {daily_tonnes:.2f}")
-
-if len(st.session_state.farms) > 0:
-
-    farm_names = [farm["name"] for farm in st.session_state.farms]
-
-    selected_farm_name = st.sidebar.selectbox(
-        "Select Farm",
-        farm_names
-    )
-
-    if st.sidebar.button("➕ Add One Day Production"):
-        for farm in st.session_state.farms:
-            if farm["name"] == selected_farm_name:
-                farm["tonnes_cut"] += daily_tonnes
-                break
-        st.rerun()
-
+if not isinstance(st.session_state.farms, list):
+    st.session_state.farms = []
 
 # -----------------------------
-# ADD FARM SECTION
+# 2️⃣ Add new farm
 # -----------------------------
+st.subheader("Add New Farm")
 
-st.subheader("➕ Add New Farm")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    farm_name = st.text_input("Farm Name")
-
-with col2:
-    total_tonnes = st.number_input("Total Tonnes", min_value=0.0, value=0.0)
-
-with col3:
-    target_percent = st.number_input("Target %", min_value=0.0, max_value=100.0, value=100.0)
+new_farm_name = st.text_input("Farm Number")
 
 if st.button("Add Farm"):
-    if farm_name:
+    if new_farm_name.strip() != "":
         st.session_state.farms.append({
-            "name": farm_name,
-            "total": total_tonnes,
-            "target_percent": target_percent,
-            "tonnes_cut": 0.0
+            "name": new_farm_name,
+            "total": 0.0,
+            "cut": 0.0,
+            "target_percent": 0.0
         })
+        st.success(f"Farm {new_farm_name} added!")
         st.rerun()
 
-
 # -----------------------------
-# FARM DISPLAY SECTION
+# 3️⃣ Display farms
 # -----------------------------
+if len(st.session_state.farms) > 0:
 
-st.subheader("📊 Farm Progress")
+    tabs = st.tabs([farm["name"] for farm in st.session_state.farms])
 
-for i, farm in enumerate(st.session_state.farms):
+    for i, farm in enumerate(st.session_state.farms):
 
-    st.markdown("---")
-    st.subheader(farm["name"])
+        with tabs[i]:
 
-    # Ensure safe defaults
-    if "tonnes_cut" not in farm:
-        farm["tonnes_cut"] = 0.0
-    if "target_percent" not in farm:
-        farm["target_percent"] = 100.0
+            st.subheader(f"Farm {farm['name']}")
 
-    # -----------------------------
-    # CALCULATIONS
-    # -----------------------------
+            # --- Basic Inputs ---
+            total = st.number_input(
+                "Total Tonnes",
+                min_value=0.0,
+                value=farm.get("total", 0.0),
+                key=f"total_{i}"
+            )
 
-    target_tonnes = farm["total"] * farm["target_percent"] / 100
-    remaining_tonnes = max(target_tonnes - farm["tonnes_cut"], 0)
+            cut = st.number_input(
+                "Tonnes Cut",
+                min_value=0.0,
+                value=farm.get("cut", 0.0),
+                key=f"cut_{i}"
+            )
 
-    bins_required = remaining_tonnes / tonnes_per_bin if tonnes_per_bin > 0 else 0
-    days_required = bins_required / bins_today if bins_today > 0 else 0
+            target_percent = st.number_input(
+                "Target %",
+                min_value=0.0,
+                max_value=100.0,
+                value=farm.get("target_percent", 0.0),
+                key=f"target_{i}"
+            )
 
-    # -----------------------------
-    # DISPLAY
-    # -----------------------------
+            st.divider()
 
-    col1, col2, col3, col4 = st.columns(4)
+            # --- Production Inputs ---
+            tonnes_per_bin = st.number_input(
+                "Tonnes per Bin",
+                min_value=0.0,
+                value=0.0,
+                key=f"tpb_{i}"
+            )
 
-    with col1:
-        st.write(f"Total Tonnes: {farm['total']:.2f}")
+            bins_per_day = st.number_input(
+                "Bins per Day",
+                min_value=0.0,
+                value=0.0,
+                key=f"bpd_{i}"
+            )
 
-    with col2:
-        st.write(f"Target Tonnes: {target_tonnes:.2f}")
+            # ---------------- Add One Day Production ----------------
+            if st.button("Add One Day Production", key=f"add_day_{i}"):
 
-    with col3:
-        st.write(f"Tonnes Cut: {farm['tonnes_cut']:.2f}")
+                daily_tonnes = bins_per_day * tonnes_per_bin
+                new_cut = farm.get("cut", 0.0) + daily_tonnes
 
-    with col4:
-        st.write(f"Remaining: {remaining_tonnes:.2f}")
+                # Prevent exceeding total
+                if new_cut > total:
+                    new_cut = total
 
-    progress = farm["tonnes_cut"] / target_tonnes if target_tonnes > 0 else 0
-    st.progress(min(progress, 1.0))
+                farm["cut"] = new_cut
+                st.success(f"Added {daily_tonnes:.2f} tonnes to cut total.")
+                st.rerun()
 
-    # Extra Calculations
-    col5, col6 = st.columns(2)
+            st.divider()
 
-    with col5:
-        st.write(f"Bins Required: {bins_required:.1f}")
+            # --- Day Projection Tool ---
+            days_planned = st.number_input(
+                "Days Planned (Projection)",
+                min_value=0,
+                value=0,
+                step=1,
+                key=f"days_{i}"
+            )
 
-    with col6:
-        if bins_today > 0:
-            st.write(f"Days Required: {days_required:.1f}")
-        else:
-            st.write("Days Required: -")
+            # ---------------- Current Calculations ----------------
+            remaining = total - cut
+            percent_cut = (cut / total * 100) if total > 0 else 0
 
-    # Delete
-    if st.button(f"❌ Delete {farm['name']}", key=f"delete_{i}"):
-        st.session_state.farms.pop(i)
-        st.rerun()
+            target_tonnes = (total * target_percent / 100)
+            tonnes_needed = max(target_tonnes - cut, 0)
+
+            bins_required = (tonnes_needed / tonnes_per_bin) if tonnes_per_bin > 0 else 0
+            days_required = (bins_required / bins_per_day) if bins_per_day > 0 else 0
+
+            # ---------------- Projection Calculations ----------------
+            projected_bins = bins_per_day * days_planned
+            projected_tonnes = projected_bins * tonnes_per_bin
+            projected_total_cut = min(cut + projected_tonnes, total)
+
+            projected_percent = (projected_total_cut / total * 100) if total > 0 else 0
+
+            # ---------------- Display ----------------
+            st.write(f"Tonnes Remaining: {remaining:.2f}")
+            st.write(f"% Cut: {percent_cut:.2f}%")
+
+            st.divider()
+
+            st.write(f"Target Tonnes ({target_percent}%): {target_tonnes:.2f}")
+            st.write(f"Tonnes Required to Reach Target: {tonnes_needed:.2f}")
+            st.write(f"Bins Required: {math.ceil(bins_required) if bins_required > 0 else 0}")
+            st.write(f"Days Required: {days_required:.2f}")
+
+            st.divider()
+
+            st.subheader("Projection Based on Days")
+            st.write(f"Projected Additional Tonnes: {projected_tonnes:.2f}")
+            st.write(f"Projected Total Cut: {projected_total_cut:.2f}")
+            st.write(f"Projected % Cut: {projected_percent:.2f}%")
+
+            # --- Save updates ---
+            farm["total"] = total
+            farm["cut"] = cut
+            farm["target_percent"] = target_percent
+
+            st.divider()
+
+            # --- Delete Farm ---
+            if st.button("Delete This Farm", key=f"delete_{i}"):
+                st.session_state.farms.pop(i)
+                st.rerun()
+
+else:
+    st.info("No farms added yet.")
