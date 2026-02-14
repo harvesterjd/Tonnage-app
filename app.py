@@ -8,7 +8,6 @@ st.title("Farm Tonnage Tracker")
 if "farms" not in st.session_state:
     st.session_state.farms = []
 
-# If old broken data exists, reset it
 if not isinstance(st.session_state.farms, list):
     st.session_state.farms = []
 
@@ -27,6 +26,7 @@ if st.button("Add Farm"):
             "cut": 0.0
         })
         st.success(f"Farm {new_farm_name} added!")
+        st.rerun()
 
 # -----------------------------
 # 3️⃣ Display farms
@@ -43,6 +43,8 @@ if len(valid_farms) > 0:
     for i, farm in enumerate(valid_farms):
 
         with tabs[i]:
+
+            st.subheader(f"Farm {farm['name']}")
 
             total = st.number_input(
                 "Total Tonnes",
@@ -67,6 +69,13 @@ if len(valid_farms) > 0:
             # Save updates
             farm["total"] = total
             farm["cut"] = cut
+
+            st.divider()
+
+            # 🔴 Delete Button
+            if st.button("Delete This Farm", key=f"delete_{i}"):
+                st.session_state.farms.pop(i)
+                st.rerun()
 
 else:
     st.info("No farms added yet.")
