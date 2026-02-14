@@ -36,10 +36,8 @@ bins_today = st.sidebar.number_input(
 )
 
 daily_tonnes = bins_today * tonnes_per_bin
+
 st.sidebar.write(f"Tonnes Today: {daily_tonnes:.2f}")
-
-
-# -------- SAFE FARM SELECTION --------
 
 if len(st.session_state.farms) > 0:
 
@@ -51,13 +49,10 @@ if len(st.session_state.farms) > 0:
     )
 
     if st.sidebar.button("➕ Add One Day Production"):
-
-        # Find farm by name (NOT by index)
         for farm in st.session_state.farms:
             if farm["name"] == selected_farm_name:
                 farm["tonnes_cut"] += daily_tonnes
                 break
-
         st.rerun()
 
 
@@ -97,20 +92,30 @@ st.subheader("📊 Farm Progress")
 
 for i, farm in enumerate(st.session_state.farms):
 
-    # Safety defaults (prevents old data crash)
-    if "tonnes_cut" not in farm:
-        farm["tonnes_cut"] = 0.0
-
-    if "target_percent" not in farm:
-        farm["target_percent"] = 100.0
-
     st.markdown("---")
     st.subheader(farm["name"])
 
-    target_tonnes = farm["total"] * farm["target_percent"] / 100
-    remaining = max(target_tonnes - farm["tonnes_cut"], 0)
+    # Ensure safe defaults
+    if "tonnes_cut" not in farm:
+        farm["tonnes_cut"] = 0.0
+    if "target_percent" not in farm:
+        farm["target_percent"] = 100.0
 
-    col1, col2, col3 = st.columns(3)
+    # -----------------------------
+    # CALCULATIONS
+    # -----------------------------
+
+    target_tonnes = farm["total"] * farm["target_percent"] / 100
+    remaining_tonnes = max(target_tonnes - farm["tonnes_cut"], 0)
+
+    bins_required = remaining_tonnes / tonnes_per_bin if tonnes_per_bin > 0 else 0
+    days_required = bins_required / bins_today if bins_today > 0 else 0
+
+    # -----------------------------
+    # DISPLAY
+    # -----------------------------
+
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.write(f"Total Tonnes: {farm['total']:.2f}")
@@ -121,11 +126,25 @@ for i, farm in enumerate(st.session_state.farms):
     with col3:
         st.write(f"Tonnes Cut: {farm['tonnes_cut']:.2f}")
 
+    with col4:
+        st.write(f"Remaining: {remaining_tonnes:.2f}")
+
     progress = farm["tonnes_cut"] / target_tonnes if target_tonnes > 0 else 0
     st.progress(min(progress, 1.0))
 
-    st.write(f"Remaining Tonnes: {remaining:.2f}")
+    # Extra Calculations
+    col5, col6 = st.columns(2)
 
+    with col5:
+        st.write(f"Bins Required: {bins_required:.1f}")
+
+    with col6:
+        if bins_today > 0:
+            st.write(f"Days Required: {days_required:.1f}")
+        else:
+            st.write("Days Required: -")
+
+    # Delete
     if st.button(f"❌ Delete {farm['name']}", key=f"delete_{i}"):
         st.session_state.farms.pop(i)
         st.rerun()
