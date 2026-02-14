@@ -26,7 +26,19 @@ if st.button("Add Farm"):
         st.session_state[f"days_{farm_id}"] = 0
 
 # -----------------------------
-# Select Farm Instead of Tabs
+# Callback Function
+# -----------------------------
+def add_day_production(farm_id):
+    total = st.session_state.get(f"total_{farm_id}", 0.0)
+    cut = st.session_state.get(f"cut_{farm_id}", 0.0)
+    tpb = st.session_state.get(f"tpb_{farm_id}", 0.0)
+    bpd = st.session_state.get(f"bpd_{farm_id}", 0.0)
+
+    daily = tpb * bpd
+    st.session_state[f"cut_{farm_id}"] = min(cut + daily, total)
+
+# -----------------------------
+# Select Farm
 # -----------------------------
 if st.session_state.farms:
 
@@ -52,19 +64,12 @@ if st.session_state.farms:
     st.number_input("Tonnes per Bin", min_value=0.0, key=f"tpb_{farm_id}")
     st.number_input("Bins per Day", min_value=0.0, key=f"bpd_{farm_id}")
 
-    if st.button("Add One Day Production"):
-
-        daily = (
-            st.session_state[f"tpb_{farm_id}"] *
-            st.session_state[f"bpd_{farm_id}"]
-        )
-
-        st.session_state[f"cut_{farm_id}"] = min(
-            st.session_state[f"cut_{farm_id}"] + daily,
-            st.session_state[f"total_{farm_id}"]
-        )
-
-        st.success(f"Added {daily:.2f} tonnes.")
+    # 🔥 MUST use on_click (cannot mutate after widget render)
+    st.button(
+        "Add One Day Production",
+        on_click=add_day_production,
+        args=(farm_id,)
+    )
 
     st.divider()
 
@@ -92,7 +97,7 @@ if st.session_state.farms:
     projected_percent = (projected_total_cut / total * 100) if total > 0 else 0
 
     st.write(f"Tonnes Remaining: {remaining:.2f}")
-    st.write(f"% Cut: {percent_cut:.2f}%")
+    st.write(f"% Cut: {percent_cut:.2f}")
 
     st.divider()
 
