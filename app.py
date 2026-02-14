@@ -48,13 +48,10 @@ if len(st.session_state.farms) > 0:
                 key=f"total_{i}"
             )
 
-            # --- Properly Controlled Tonnes Cut ---
-            if f"cut_{i}" not in st.session_state:
-                st.session_state[f"cut_{i}"] = farm["cut"]
-
             cut = st.number_input(
                 "Tonnes Cut",
                 min_value=0.0,
+                value=farm["cut"],
                 key=f"cut_{i}"
             )
 
@@ -89,16 +86,15 @@ if len(st.session_state.farms) > 0:
             if st.button("Add One Day Production", key=f"add_day_{i}"):
 
                 daily_tonnes = bins_per_day * tonnes_per_bin
-
-                st.session_state[f"cut_{i}"] += daily_tonnes
+                new_cut = farm["cut"] + daily_tonnes
 
                 # Prevent exceeding total
-                if st.session_state[f"cut_{i}"] > total:
-                    st.session_state[f"cut_{i}"] = total
+                if new_cut > total:
+                    new_cut = total
 
-                farm["cut"] = st.session_state[f"cut_{i}"]
+                farm["cut"] = new_cut
+                st.session_state.farms[i] = farm
 
-                st.success(f"Added {daily_tonnes:.2f} tonnes.")
                 st.rerun()
 
             st.divider()
@@ -131,7 +127,7 @@ if len(st.session_state.farms) > 0:
                 if bins_per_day > 0 else 0
             )
 
-            # --- Projection ---
+            # Projection
             projected_bins = bins_per_day * days_planned
             projected_tonnes = projected_bins * tonnes_per_bin
             projected_total_cut = min(cut + projected_tonnes, total)
@@ -163,8 +159,10 @@ if len(st.session_state.farms) > 0:
             # ---------------- Save Updates ----------------
 
             farm["total"] = total
-            farm["cut"] = st.session_state[f"cut_{i}"]
+            farm["cut"] = cut
             farm["target_percent"] = target_percent
+
+            st.session_state.farms[i] = farm
 
             st.divider()
 
