@@ -21,7 +21,7 @@ if "tonnes_per_bin" not in st.session_state:
 
 st.sidebar.header("📦 Daily Production")
 
-st.session_state.tonnes_per_bin = st.sidebar.number_input(
+tonnes_per_bin = st.sidebar.number_input(
     "Tonnes per Bin",
     min_value=0.0,
     value=st.session_state.tonnes_per_bin,
@@ -35,22 +35,30 @@ bins_today = st.sidebar.number_input(
     step=1,
 )
 
-daily_tonnes = bins_today * st.session_state.tonnes_per_bin
-
+daily_tonnes = bins_today * tonnes_per_bin
 st.sidebar.write(f"Tonnes Today: {daily_tonnes:.2f}")
 
-# Select farm safely
+
+# -------- SAFE FARM SELECTION --------
+
 if len(st.session_state.farms) > 0:
 
-    selected_index = st.sidebar.selectbox(
+    farm_names = [farm["name"] for farm in st.session_state.farms]
+
+    selected_farm_name = st.sidebar.selectbox(
         "Select Farm",
-        range(len(st.session_state.farms)),
-        format_func=lambda x: st.session_state.farms[x]["name"],
+        farm_names
     )
 
     if st.sidebar.button("➕ Add One Day Production"):
-        st.session_state.farms[selected_index]["tonnes_cut"] += daily_tonnes
-        st.success("Production added successfully!")
+
+        # Find farm by name (NOT by index)
+        for farm in st.session_state.farms:
+            if farm["name"] == selected_farm_name:
+                farm["tonnes_cut"] += daily_tonnes
+                break
+
+        st.rerun()
 
 
 # -----------------------------
@@ -78,7 +86,7 @@ if st.button("Add Farm"):
             "target_percent": target_percent,
             "tonnes_cut": 0.0
         })
-        st.success("Farm added!")
+        st.rerun()
 
 
 # -----------------------------
@@ -89,7 +97,7 @@ st.subheader("📊 Farm Progress")
 
 for i, farm in enumerate(st.session_state.farms):
 
-    # Safety protection for older saved farms
+    # Safety defaults (prevents old data crash)
     if "tonnes_cut" not in farm:
         farm["tonnes_cut"] = 0.0
 
@@ -120,4 +128,4 @@ for i, farm in enumerate(st.session_state.farms):
 
     if st.button(f"❌ Delete {farm['name']}", key=f"delete_{i}"):
         st.session_state.farms.pop(i)
-        st.experimental_rerun()
+        st.rerun()
