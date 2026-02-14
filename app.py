@@ -29,7 +29,7 @@ if st.button("Add Farm"):
             "target_percent": 0.0
         })
         st.success(f"Farm {new_farm_name} added!")
-        st.rerun()
+      
 
 # -----------------------------
 # 3️⃣ Display farms
@@ -96,7 +96,7 @@ if len(st.session_state.farms) > 0:
 
                 farm["cut"] = new_cut
                 st.success(f"Added {daily_tonnes:.2f} tonnes to cut total.")
-                st.rerun()
+                
 
             st.divider()
 
@@ -154,7 +154,7 @@ if len(st.session_state.farms) > 0:
             # --- Delete Farm ---
             if st.button("Delete This Farm", key=f"delete_{i}"):
                 st.session_state.farms.pop(i)
-                st.rerun()
+              
 
 else:
     st.info("No farms added yet.")
