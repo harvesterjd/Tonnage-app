@@ -1,3 +1,4 @@
+st.session_state.clear()
 import streamlit as st
 import math
 import uuid
