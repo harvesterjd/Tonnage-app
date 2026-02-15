@@ -6,13 +6,26 @@ import uuid
 DATA_FILE = "data.json"
 
 # -----------------------------
-# Load Data
+# Load Data (Crash Proof)
 # -----------------------------
 def load_data():
     if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r") as f:
-            return json.load(f)
-    return {"growers": []}
+        try:
+            with open(DATA_FILE, "r") as f:
+                data = json.load(f)
+        except:
+            data = {}
+    else:
+        data = {}
+
+    # Ensure correct structure
+    if not isinstance(data, dict):
+        data = {}
+
+    if "growers" not in data:
+        data["growers"] = []
+
+    return data
 
 # -----------------------------
 # Save Data
@@ -22,10 +35,13 @@ def save_data():
         json.dump(st.session_state.data, f, indent=4)
 
 # -----------------------------
-# Initialise
+# Initialise Session
 # -----------------------------
 if "data" not in st.session_state:
     st.session_state.data = load_data()
+
+if "growers" not in st.session_state.data:
+    st.session_state.data["growers"] = []
 
 st.title("Tonnage Planner")
 
@@ -36,7 +52,7 @@ st.subheader("Add Grower")
 new_grower = st.text_input("Grower Name")
 
 if st.button("Add Grower"):
-    if new_grower.strip() != "":
+    if new_grower.strip():
         st.session_state.data["growers"].append({
             "id": str(uuid.uuid4()),
             "name": new_grower,
@@ -57,12 +73,9 @@ for grower in st.session_state.data["growers"]:
 
     with st.expander(grower["name"], expanded=True):
 
-        # -----------------------------
-        # Grower Settings
-        # -----------------------------
-        c1, c2, c3 = st.columns(3)
+        col1, col2, col3 = st.columns(3)
 
-        with c1:
+        with col1:
             grower["target_percent"] = st.number_input(
                 "Target %",
                 min_value=0.0,
@@ -71,7 +84,7 @@ for grower in st.session_state.data["growers"]:
                 key=f"target_{grower['id']}"
             )
 
-        with c2:
+        with col2:
             grower["bin_weight"] = st.number_input(
                 "Bin Weight",
                 min_value=0.0,
@@ -79,7 +92,7 @@ for grower in st.session_state.data["growers"]:
                 key=f"binweight_{grower['id']}"
             )
 
-        with c3:
+        with col3:
             grower["bins_per_day"] = st.number_input(
                 "Bins Per Day",
                 min_value=0.0,
@@ -96,7 +109,7 @@ for grower in st.session_state.data["growers"]:
         )
 
         if st.button("Add Farm", key=f"addfarm_{grower['id']}"):
-            if new_farm.strip() != "":
+            if new_farm.strip():
                 grower["farms"].append({
                     "id": str(uuid.uuid4()),
                     "name": new_farm,
@@ -109,7 +122,7 @@ for grower in st.session_state.data["growers"]:
         st.divider()
 
         # -----------------------------
-        # Farm Loop
+        # Farms
         # -----------------------------
         total_tonnes = 0
 
@@ -117,11 +130,9 @@ for grower in st.session_state.data["growers"]:
 
             col1, col2, col3 = st.columns(3)
 
-            # Farm Name
             with col1:
                 st.markdown(f"**{farm['name']}**")
 
-            # Total Tonnes
             with col2:
                 farm["total"] = st.number_input(
                     "Total Tonnes",
@@ -130,7 +141,6 @@ for grower in st.session_state.data["growers"]:
                     key=f"total_{farm['id']}"
                 )
 
-            # Tonnes Cut + Buttons
             with col3:
 
                 step = grower["bin_weight"] * grower["bins_per_day"]
@@ -141,7 +151,6 @@ for grower in st.session_state.data["growers"]:
 
                 c1, c2, c3 = st.columns([3, 1, 1])
 
-                # Tonnes Cut input
                 with c1:
                     st.number_input(
                         "Tonnes Cut",
@@ -150,7 +159,6 @@ for grower in st.session_state.data["growers"]:
                         key=cut_key
                     )
 
-                # PLUS
                 with c2:
                     if st.button("➕", key=f"plus_{farm['id']}"):
                         if step > 0:
@@ -161,7 +169,6 @@ for grower in st.session_state.data["growers"]:
                             save_data()
                             st.rerun()
 
-                # MINUS
                 with c3:
                     if st.button("➖", key=f"minus_{farm['id']}"):
                         if step > 0:
@@ -176,7 +183,6 @@ for grower in st.session_state.data["growers"]:
 
             total_tonnes += farm["total"]
 
-            # Delete Farm
             if st.button("Delete Farm", key=f"deletefarm_{farm['id']}"):
                 grower["farms"] = [
                     f for f in grower["farms"]
@@ -206,7 +212,6 @@ for grower in st.session_state.data["growers"]:
         st.markdown(f"### Total Bins Required: {total_bins_required:.2f}")
         st.markdown(f"### Days Required: {days_required:.2f}")
 
-        # Delete Grower
         if st.button("Delete Grower", key=f"deletegrower_{grower['id']}"):
             st.session_state.data["growers"] = [
                 g for g in st.session_state.data["growers"]
