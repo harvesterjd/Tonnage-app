@@ -145,42 +145,41 @@ for grower in st.session_state.data["growers"]:
                 )
 
             with col3:
+               step = grower["bin_weight"] * grower["bins_per_day"]
+cut_key = f"cut_{farm['id']}"
 
-                step = grower["bin_weight"] * grower["bins_per_day"]
-                cut_key = f"cut_{farm['id']}"
+# Initialise once
+if cut_key not in st.session_state:
+    st.session_state[cut_key] = float(farm.get("cut", 0))
 
-                if cut_key not in st.session_state:
-                    st.session_state[cut_key] = float(farm.get("cut", 0))
+# Buttons FIRST
+col_a, col_b = st.columns(2)
 
-                c1, c2, c3 = st.columns([3, 1, 1])
+with col_a:
+    if st.button("➕", key=f"plus_{farm['id']}"):
+        if step > 0:
+            st.session_state[cut_key] = min(
+                st.session_state[cut_key] + step,
+                farm["total"]
+            )
 
-                with c1:
-                    st.number_input(
-                        "Tonnes Cut",
-                        min_value=0.0,
-                        max_value=float(farm["total"]),
-                        key=cut_key
-                    )
+with col_b:
+    if st.button("➖", key=f"minus_{farm['id']}"):
+        if step > 0:
+            st.session_state[cut_key] = max(
+                st.session_state[cut_key] - step,
+                0
+            )
 
-                with c2:
-                    if st.button("➕", key=f"plus_{farm['id']}"):
-                        if step > 0:
-                            st.session_state[cut_key] = min(
-                                st.session_state[cut_key] + step,
-                                farm["total"]
-                            )
-                            save_data()
-                            st.rerun()
+# THEN render number input
+st.number_input(
+    "Tonnes Cut",
+    min_value=0.0,
+    max_value=float(farm["total"]),
+    key=cut_key
+)
 
-                with c3:
-                    if st.button("➖", key=f"minus_{farm['id']}"):
-                        if step > 0:
-                            st.session_state[cut_key] = max(
-                                st.session_state[cut_key] - step,
-                                0
-                            )
-                            save_data()
-                            st.rerun()
+farm["cut"] = st.session_state[cut_key]
 
                 farm["cut"] = st.session_state[cut_key]
 
