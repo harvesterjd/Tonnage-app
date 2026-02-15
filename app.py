@@ -263,6 +263,41 @@ if st.session_state.growers:
         st.write(f"Projected Additional Tonnes: {projected_tonnes:.2f}")
         st.write(f"Projected Total Cut: {projected_total_cut:.2f}")
         st.write(f"Projected % Cut: {projected_percent:.2f}%")
+# =================================================
+# 🔥 GROWER AGGREGATED TOTALS (NEW SECTION)
+# =================================================
+total_grower_tonnes = 0
+total_grower_cut = 0
+total_grower_target_tonnes = 0
+
+for farm in grower["farms"]:
+    fid = farm["id"]
+
+    total = st.session_state.get(f"total_{fid}", 0)
+    cut = st.session_state.get(f"cut_{fid}", 0)
+    target = st.session_state.get(f"target_{fid}", 0)
+
+    total_grower_tonnes += total
+    total_grower_cut += cut
+    total_grower_target_tonnes += (total * target / 100)
+
+grower_percent_cut = (
+    (total_grower_cut / total_grower_tonnes) * 100
+    if total_grower_tonnes > 0 else 0
+)
+
+grower_target_percent = (
+    (total_grower_target_tonnes / total_grower_tonnes) * 100
+    if total_grower_tonnes > 0 else 0
+)
+
+if grower["farms"]:
+    st.subheader("Grower Totals (All Farms)")
+    st.write(f"Total Grower Tonnes: {total_grower_tonnes:.2f}")
+    st.write(f"Total Grower Tonnes Cut: {total_grower_cut:.2f}")
+    st.write(f"Total Grower % Cut: {grower_percent_cut:.2f}%")
+    st.write(f"Total Grower Target %: {grower_target_percent:.2f}%")
+    st.divider()
 
     else:
         st.info("No farms added for this grower yet.")
