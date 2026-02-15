@@ -39,6 +39,13 @@ if st.session_state.growers:
     selected_name = st.selectbox("Select Grower", grower_names)
 
     grower = next(g for g in st.session_state.growers if g["name"] == selected_name)
+    # Ensure grower has required keys (fix old session data)
+if "target_percent" not in grower:
+    grower["target_percent"] = 0.0
+if "bin_weight" not in grower:
+    grower["bin_weight"] = 0.0
+if "bins_per_day" not in grower:
+    grower["bins_per_day"] = 0.0
 
     if st.button("Delete Grower"):
         st.session_state.growers = [
