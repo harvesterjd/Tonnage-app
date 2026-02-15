@@ -100,59 +100,50 @@ for grower in st.session_state.data["growers"]:
     # -----------------------------
     # Farms
     # -----------------------------
-    for farm in grower["farms"]:
+   for farm in grower["farms"]:
 
-        st.markdown(f"### {farm['name']}")
-        st.write(f"Total Tonnes: {farm['total']}")
+    st.markdown(f"### {farm['name']}")
+    st.write(f"Total Tonnes: {farm['total']}")
 
-        step = grower["bin_weight"] * grower["bins_per_day"]
-        cut_key = f"cut_{farm['id']}"
+    step = grower["bin_weight"] * grower["bins_per_day"]
+    cut_key = f"cut_{farm['id']}"
 
-        # Initialise once
-        if cut_key not in st.session_state:
-            st.session_state[cut_key] = float(farm.get("cut", 0))
+    # Initialise once
+    if cut_key not in st.session_state:
+        st.session_state[cut_key] = float(farm.get("cut", 0))
 
-        # Callbacks
-        def increase_cut(farm=farm, cut_key=cut_key):
+    # Buttons FIRST (before number_input)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("➕", key=f"plus_{farm['id']}"):
             if step > 0:
                 st.session_state[cut_key] = min(
                     st.session_state[cut_key] + step,
                     farm["total"]
                 )
 
-        def decrease_cut(farm=farm, cut_key=cut_key):
+    with col2:
+        if st.button("➖", key=f"minus_{farm['id']}"):
             if step > 0:
                 st.session_state[cut_key] = max(
                     st.session_state[cut_key] - step,
                     0
                 )
 
-        col1, col2 = st.columns(2)
+    # THEN the widget
+    st.number_input(
+        "Tonnes Cut",
+        min_value=0.0,
+        max_value=float(farm["total"]),
+        key=cut_key
+    )
 
-        with col1:
-            st.button(
-                "➕",
-                key=f"plus_{farm['id']}",
-                on_click=increase_cut
-            )
+    farm["cut"] = st.session_state[cut_key]
 
-        with col2:
-            st.button(
-                "➖",
-                key=f"minus_{farm['id']}",
-                on_click=decrease_cut
-            )
+    remaining = farm["total"] - farm["cut"]
+    st.write(f"Remaining: {remaining}")
 
-        st.number_input(
-            "Tonnes Cut",
-            min_value=0.0,
-            max_value=float(farm["total"]),
-            key=cut_key
-        )
+save_data()
 
-        farm["cut"] = st.session_state[cut_key]
-
-        remaining = farm["total"] - farm["cut"]
-        st.write(f"Remaining: {remaining}")
-
-    save_data()
