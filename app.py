@@ -18,13 +18,11 @@ new_grower_name = st.text_input("Grower Name")
 
 if st.button("Add Grower"):
     if new_grower_name.strip():
-
         st.session_state.growers.append({
             "id": str(uuid.uuid4()),
             "name": new_grower_name,
             "farms": []
         })
-
         st.rerun()
 
 # =================================================
@@ -47,7 +45,6 @@ if st.session_state.growers:
 
     if st.button("Add Farm"):
         if new_farm_name.strip():
-
             grower["farms"].append({
                 "id": str(uuid.uuid4()),
                 "name": new_farm_name,
@@ -58,7 +55,6 @@ if st.session_state.growers:
                 "bpd": 0.0,
                 "days": 0
             })
-
             st.rerun()
 
     # =================================================
@@ -70,6 +66,22 @@ if st.session_state.growers:
         selected_farm_name = st.selectbox("Select Farm", farm_names)
 
         farm = next(f for f in grower["farms"] if f["name"] == selected_farm_name)
+
+        # -------------------------------------------------
+        # SAFETY UPGRADE (handles old farms)
+        # -------------------------------------------------
+        defaults = {
+            "total": 0.0,
+            "cut": 0.0,
+            "target": 0.0,
+            "tpb": 0.0,
+            "bpd": 0.0,
+            "days": 0
+        }
+
+        for key, value in defaults.items():
+            if key not in farm:
+                farm[key] = value
 
         st.subheader(f"Farm {farm['name']}")
 
@@ -110,6 +122,7 @@ if st.session_state.growers:
         if st.button("Add One Day Production"):
             daily = farm["tpb"] * farm["bpd"]
             farm["cut"] = min(farm["cut"] + daily, farm["total"])
+            st.rerun()
 
         st.divider()
 
@@ -165,7 +178,7 @@ if st.session_state.growers:
         st.divider()
 
         # =================================================
-        # GROWER TOTALS (NOW 100% RELIABLE)
+        # GROWER TOTALS (Reliable)
         # =================================================
         total_grower_tonnes = sum(f["total"] for f in grower["farms"])
         total_grower_cut = sum(f["cut"] for f in grower["farms"])
