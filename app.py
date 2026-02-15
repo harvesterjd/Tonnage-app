@@ -83,6 +83,42 @@ if st.session_state.growers:
 
     st.divider()
 
+    # =================================================
+    # 🔥 GROWER AGGREGATED TOTALS (NEW SECTION)
+    # =================================================
+    total_grower_tonnes = 0
+    total_grower_cut = 0
+    total_grower_target_tonnes = 0
+
+    for farm in grower["farms"]:
+        fid = farm["id"]
+
+        total = st.session_state.get(f"total_{fid}", 0)
+        cut = st.session_state.get(f"cut_{fid}", 0)
+        target = st.session_state.get(f"target_{fid}", 0)
+
+        total_grower_tonnes += total
+        total_grower_cut += cut
+        total_grower_target_tonnes += (total * target / 100)
+
+    grower_percent_cut = (
+        (total_grower_cut / total_grower_tonnes) * 100
+        if total_grower_tonnes > 0 else 0
+    )
+
+    grower_target_percent = (
+        (total_grower_target_tonnes / total_grower_tonnes) * 100
+        if total_grower_tonnes > 0 else 0
+    )
+
+    if grower["farms"]:
+        st.subheader("Grower Totals (All Farms)")
+        st.write(f"Total Grower Tonnes: {total_grower_tonnes:.2f}")
+        st.write(f"Total Grower Tonnes Cut: {total_grower_cut:.2f}")
+        st.write(f"Total Grower % Cut: {grower_percent_cut:.2f}%")
+        st.write(f"Total Grower Target %: {grower_target_percent:.2f}%")
+        st.divider()
+
     # -------------------------------------------------
     # Add Farm
     # -------------------------------------------------
@@ -99,7 +135,6 @@ if st.session_state.growers:
                 "name": new_farm_name
             })
 
-            # Initialize farm session keys
             st.session_state[f"total_{farm_id}"] = 0.0
             st.session_state[f"cut_{farm_id}"] = 0.0
             st.session_state[f"target_{farm_id}"] = 0.0
@@ -118,9 +153,6 @@ if st.session_state.growers:
         farm = next(f for f in grower["farms"] if f["name"] == selected_farm_name)
         farm_id = farm["id"]
 
-        # -------------------------------------------------
-        # Callbacks
-        # -------------------------------------------------
         def add_day(farm_id):
             daily = (
                 st.session_state[f"tpb_{farm_id}"] *
@@ -167,9 +199,7 @@ if st.session_state.growers:
                 type="secondary"
             )
 
-        # -------------------------------------------------
         # Inputs
-        # -------------------------------------------------
         st.number_input("Total Tonnes", min_value=0.0, key=f"total_{farm_id}")
         st.number_input("Tonnes Cut", min_value=0.0, key=f"cut_{farm_id}")
         st.number_input("Target %", min_value=0.0, max_value=100.0, key=f"target_{farm_id}")
@@ -189,9 +219,7 @@ if st.session_state.growers:
 
         st.number_input("Days Planned (Projection)", min_value=0, step=1, key=f"days_{farm_id}")
 
-        # -------------------------------------------------
         # Calculations
-        # -------------------------------------------------
         total = st.session_state[f"total_{farm_id}"]
         cut = st.session_state[f"cut_{farm_id}"]
         target = st.session_state[f"target_{farm_id}"]
@@ -206,10 +234,8 @@ if st.session_state.growers:
         tonnes_needed = max(target_tonnes - cut, 0)
 
         daily_capacity = tpb * bpd
-
         bins_required = tonnes_needed / tpb if tpb > 0 else 0
 
-        # ✅ Correct Days Remaining Calculation
         if daily_capacity > 0:
             days_required = math.ceil(tonnes_needed / daily_capacity)
         else:
@@ -219,11 +245,9 @@ if st.session_state.growers:
         projected_total_cut = min(cut + projected_tonnes, total)
         projected_percent = (projected_total_cut / total * 100) if total > 0 else 0
 
-        # -------------------------------------------------
         # Output
-        # -------------------------------------------------
         st.write(f"Tonnes Remaining: {remaining:.2f}")
-        st.write(f"% Cut: {percent_cut:.2f}%")
+        st.write(f"% Cut (Farm): {percent_cut:.2f}%")
 
         st.divider()
 
