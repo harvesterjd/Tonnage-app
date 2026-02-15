@@ -1,29 +1,32 @@
 import streamlit as st
 import math
 import uuid
+import json
+import os
 
 st.set_page_config(page_title="Grower Dashboard", layout="wide")
 st.title("Grower Production Dashboard")
+
+DATA_FILE = "data.json"
+
+# -----------------------------
+# LOAD / SAVE FUNCTIONS
+# -----------------------------
+def load_data():
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "r") as f:
+            return json.load(f)
+    return []
+
+def save_data():
+    with open(DATA_FILE, "w") as f:
+        json.dump(st.session_state.growers, f)
 
 # -----------------------------
 # INIT SESSION STATE
 # -----------------------------
 if "growers" not in st.session_state:
-    st.session_state.growers = []
-# Repair growers structure if needed
-for grower in st.session_state.growers:
-
-    if "farms" not in grower:
-        grower["farms"] = []
-
-    if "target_percent" not in grower:
-        grower["target_percent"] = 0.0
-
-    if "bin_weight" not in grower:
-        grower["bin_weight"] = 0.0
-
-    if "bins_per_day" not in grower:
-        grower["bins_per_day"] = 0.0
+    st.session_state.growers = load_data()
 
 # -----------------------------
 # ADD GROWER
@@ -42,6 +45,7 @@ if st.button("Add Grower"):
             "bin_weight": 0.0,
             "bins_per_day": 0.0
         })
+        save_data()
         st.rerun()
 
 # -----------------------------
@@ -53,19 +57,23 @@ if st.session_state.growers:
     selected_name = st.selectbox("Select Grower", grower_names)
 
     grower = next(g for g in st.session_state.growers if g["name"] == selected_name)
-    # Ensure grower has required keys (fix old session data)
-if "target_percent" not in grower:
-    grower["target_percent"] = 0.0
-if "bin_weight" not in grower:
-    grower["bin_weight"] = 0.0
-if "bins_per_day" not in grower:
-    grower["bins_per_day"] = 0.0
+
+    # Safety repair for old data
+    if "farms" not in grower:
+        grower["farms"] = []
+    if "target_percent" not in grower:
+        grower["target_percent"] = 0.0
+    if "bin_weight" not in grower:
+        grower["bin_weight"] = 0.0
+    if "bins_per_day" not in grower:
+        grower["bins_per_day"] = 0.0
 
     if st.button("Delete Grower"):
         st.session_state.growers = [
             g for g in st.session_state.growers
             if g["id"] != grower["id"]
         ]
+        save_data()
         st.rerun()
 
     st.divider()
@@ -85,6 +93,7 @@ if "bins_per_day" not in grower:
                 "total": 0.0,
                 "cut": 0.0
             })
+            save_data()
             st.rerun()
 
     # -----------------------------
@@ -122,6 +131,7 @@ if "bins_per_day" not in grower:
                     f for f in grower["farms"]
                     if f["id"] != farm["id"]
                 ]
+                save_data()
                 st.rerun()
 
         # -----------------------------
@@ -167,6 +177,9 @@ if "bins_per_day" not in grower:
             value=float(grower["bins_per_day"])
         )
 
+        # Save if settings change
+        save_data()
+
         # -----------------------------
         # CALCULATIONS
         # -----------------------------
@@ -204,7 +217,6 @@ if "bins_per_day" not in grower:
             remaining = daily_tonnes
 
             for farm in grower["farms"]:
-
                 if remaining <= 0:
                     break
 
@@ -214,6 +226,7 @@ if "bins_per_day" not in grower:
                 farm["cut"] += allocation
                 remaining -= allocation
 
+            save_data()
             st.rerun()
 
     else:
