@@ -186,31 +186,32 @@ if st.session_state.growers:
 
         st.divider()
 
-        # =================================================
-        # GROWER TOTALS (DEFENSIVE + SAFE)
-        # =================================================
-        total_grower_tonnes = sum(f.get("total", 0.0) for f in grower["farms"])
-        total_grower_cut = sum(f.get("cut", 0.0) for f in grower["farms"])
-        total_grower_target_tonnes = sum(
-            f.get("total", 0.0) * f.get("target", 0.0) / 100
-            for f in grower["farms"]
-        )
+       # =================================================
+# GROWER TOTALS (CORRECT TARGET LOGIC)
+# =================================================
+total_grower_tonnes = sum(f.get("total", 0.0) for f in grower["farms"])
+total_grower_cut = sum(f.get("cut", 0.0) for f in grower["farms"])
 
-        grower_percent_cut = (
-            (total_grower_cut / total_grower_tonnes) * 100
-            if total_grower_tonnes > 0 else 0
-        )
+total_grower_target_tonnes = sum(
+    f.get("total", 0.0) * f.get("target", 0.0) / 100
+    for f in grower["farms"]
+)
 
-        grower_target_percent = (
-            (total_grower_target_tonnes / total_grower_tonnes) * 100
-            if total_grower_tonnes > 0 else 0
-        )
+grower_percent_cut = (
+    (total_grower_cut / total_grower_tonnes) * 100
+    if total_grower_tonnes > 0 else 0
+)
 
-        st.subheader("Grower Totals (All Farms)")
-        st.write(f"Total Grower Tonnes: {total_grower_tonnes:.2f}")
-        st.write(f"Total Grower Tonnes Cut: {total_grower_cut:.2f}")
-        st.write(f"Total Grower % Cut: {grower_percent_cut:.2f}%")
-        st.write(f"Total Grower Target %: {grower_target_percent:.2f}%")
+grower_target_progress = (
+    (total_grower_cut / total_grower_target_tonnes) * 100
+    if total_grower_target_tonnes > 0 else 0
+)
+
+st.subheader("Grower Totals (All Farms)")
+st.write(f"Total Grower Tonnes: {total_grower_tonnes:.2f}")
+st.write(f"Total Grower Tonnes Cut: {total_grower_cut:.2f}")
+st.write(f"Total Grower % Cut: {grower_percent_cut:.2f}%")
+st.write(f"Grower Target Progress: {grower_target_progress:.2f}%")
 
     else:
         st.info("No farms added for this grower yet.")
