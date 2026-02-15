@@ -73,31 +73,97 @@ days_remaining = st.number_input(
     step=1,
 )
 
-# -----------------------------
-# Farms Table
-# -----------------------------
+# -------------------------------------------------
+# ALL FARMS VIEW
+# -------------------------------------------------
 
-st.markdown("### Farms")
+if grower["farms"]:
 
-total_current_tonnes = 0.0
+    st.subheader("Farm Summary")
 
-for farm_id, farm in grower["farms"].items():
+    total_all = 0
+    cut_all = 0
+    weighted_tpb_total = 0
 
-    col1, col2 = st.columns(2)
+    header = st.columns(6)
+    header[0].write("**Farm**")
+    header[1].write("**Total**")
+    header[2].write("**Cut**")
+    header[3].write("**Remaining**")
+    header[4].write("**% Cut**")
+    header[5].write("**TPB**")
 
-    with col1:
-        st.write(farm["name"])
+    for farm in grower["farms"]:
 
-    with col2:
-        tonnes = st.number_input(
-            "Tonnes",
-            min_value=0.0,
-            key=f"farm_{farm_id}",
-            value=farm["tonnes"],
-        )
-        farm["tonnes"] = tonnes
+        farm_id = farm["id"]
 
-    total_current_tonnes += farm["tonnes"]
+        total = st.session_state.get(f"total_{farm_id}", 0.0)
+        cut = st.session_state.get(f"cut_{farm_id}", 0.0)
+        tpb = st.session_state.get(f"tpb_{farm_id}", 0.0)
+
+        remaining = total - cut
+        percent_cut = (cut / total * 100) if total > 0 else 0
+
+        row = st.columns(6)
+        row[0].write(farm["name"])
+        row[1].write(f"{total:.2f}")
+        row[2].write(f"{cut:.2f}")
+        row[3].write(f"{remaining:.2f}")
+        row[4].write(f"{percent_cut:.2f}%")
+        row[5].write(f"{tpb:.2f}")
+
+        total_all += total
+        cut_all += cut
+        weighted_tpb_total += total * tpb
+
+    st.divider()
+
+    remaining_all = total_all - cut_all
+    percent_all = (cut_all / total_all * 100) if total_all > 0 else 0
+    average_tpb = (weighted_tpb_total / total_all) if total_all > 0 else 0
+
+    total_row = st.columns(6)
+    total_row[0].write("**TOTAL**")
+    total_row[1].write(f"**{total_all:.2f}**")
+    total_row[2].write(f"**{cut_all:.2f}**")
+    total_row[3].write(f"**{remaining_all:.2f}**")
+    total_row[4].write(f"**{percent_all:.2f}%**")
+    total_row[5].write(f"**{average_tpb:.2f}**")
+
+    # -------------------------------------------------
+    # GROWER TARGET SECTION
+    # -------------------------------------------------
+
+    st.divider()
+    st.subheader("Grower Target Planning")
+
+    grower_target = st.number_input(
+        "Grower Target %",
+        min_value=0.0,
+        max_value=100.0,
+        key=f"grower_target_{grower_id}"
+    )
+
+    days_remaining = st.number_input(
+        "Days Remaining",
+        min_value=1,
+        step=1,
+        key=f"grower_days_{grower_id}"
+    )
+
+    target_tonnes = total_all * grower_target / 100
+    tonnes_needed = max(target_tonnes - cut_all, 0)
+
+    bins_required = tonnes_needed / average_tpb if average_tpb > 0 else 0
+    bins_per_day_required = bins_required / days_remaining if days_remaining > 0 else 0
+
+    st.write(f"Target Tonnes: {target_tonnes:.2f}")
+    st.write(f"Tonnes Required: {tonnes_needed:.2f}")
+    st.write(f"Bins Required: {math.ceil(bins_required) if bins_required > 0 else 0}")
+    st.write(f"Bins Per Day Required: {bins_per_day_required:.2f}")
+
+else:
+    st.info("No farms added for this grower yet.")
 
 # -----------------------------
 # Combined Totals Row
