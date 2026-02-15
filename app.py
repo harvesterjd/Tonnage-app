@@ -95,76 +95,74 @@ if st.session_state.growers:
 
         st.subheader("Farms")
 
-       for farm in grower["farms"]:
+        for farm in grower["farms"]:
 
-    st.markdown(f"### {farm['name']}")
+            st.markdown(f"### {farm['name']}")
 
-    col1, col2, col3 = st.columns(3)
+            col1, col2, col3 = st.columns(3)
 
-    total_key = f"total_{farm['id']}"
-    cut_key = f"cut_{farm['id']}"
+            total_key = f"total_{farm['id']}"
+            cut_key = f"cut_{farm['id']}"
 
-    # Initialize widget state once
-    if total_key not in st.session_state:
-        st.session_state[total_key] = float(farm["total"])
+            # Initialize widget state
+            if total_key not in st.session_state:
+                st.session_state[total_key] = float(farm["total"])
 
-    if cut_key not in st.session_state:
-        st.session_state[cut_key] = float(farm["cut"])
+            if cut_key not in st.session_state:
+                st.session_state[cut_key] = float(farm["cut"])
 
-    # TOTAL TONNES
-    with col1:
-        st.session_state[total_key] = st.number_input(
-            "Total Tonnes",
-            min_value=0.0,
-            value=st.session_state[total_key],
-            key=total_key
-        )
-
-    # CUT TONNES
-    with col2:
-        st.session_state[cut_key] = st.number_input(
-            "Tonnes Cut",
-            min_value=0.0,
-            max_value=st.session_state[total_key],
-            value=st.session_state[cut_key],
-            key=cut_key
-        )
-
-    # PLUS / MINUS
-    with col3:
-
-        step = grower["bin_weight"] * grower["bins_per_day"]
-
-        if st.button("➕ Add Day", key=f"plus_{farm['id']}"):
-            if step > 0:
-                st.session_state[cut_key] = min(
-                    st.session_state[cut_key] + step,
-                    st.session_state[total_key]
+            # TOTAL TONNES
+            with col1:
+                st.number_input(
+                    "Total Tonnes",
+                    min_value=0.0,
+                    key=total_key
                 )
+
+            # CUT TONNES
+            with col2:
+                st.number_input(
+                    "Tonnes Cut",
+                    min_value=0.0,
+                    max_value=st.session_state[total_key],
+                    key=cut_key
+                )
+
+            # PLUS / MINUS
+            with col3:
+
+                step = grower["bin_weight"] * grower["bins_per_day"]
+
+                if st.button("➕ Add Day", key=f"plus_{farm['id']}"):
+                    if step > 0:
+                        st.session_state[cut_key] = min(
+                            st.session_state[cut_key] + step,
+                            st.session_state[total_key]
+                        )
+                        st.rerun()
+
+                if st.button("➖ Remove Day", key=f"minus_{farm['id']}"):
+                    if step > 0:
+                        st.session_state[cut_key] = max(
+                            st.session_state[cut_key] - step,
+                            0
+                        )
+                        st.rerun()
+
+            # Sync back to farm dict
+            farm["total"] = st.session_state[total_key]
+            farm["cut"] = st.session_state[cut_key]
+
+            # DELETE FARM
+            if st.button("Delete Farm", key=f"delete_{farm['id']}"):
+                grower["farms"] = [
+                    f for f in grower["farms"]
+                    if f["id"] != farm["id"]
+                ]
+                save_data()
                 st.rerun()
 
-        if st.button("➖ Remove Day", key=f"minus_{farm['id']}"):
-            if step > 0:
-                st.session_state[cut_key] = max(
-                    st.session_state[cut_key] - step,
-                    0
-                )
-                st.rerun()
-
-    # Sync back to farm dict AFTER widgets
-    farm["total"] = st.session_state[total_key]
-    farm["cut"] = st.session_state[cut_key]
-
-    # DELETE FARM
-    if st.button("Delete Farm", key=f"delete_{farm['id']}"):
-        grower["farms"] = [
-            f for f in grower["farms"]
-            if f["id"] != farm["id"]
-        ]
-        save_data()
-        st.rerun()
-
-    st.divider()
+            st.divider()
 
         # -----------------------------
         # TOTALS
