@@ -38,12 +38,57 @@ if st.session_state.growers:
     grower = next(g for g in st.session_state.growers if g["name"] == selected_grower_name)
     grower_id = grower["id"]
 
+    # -------------------------------------------------
+    # Delete Grower
+    # -------------------------------------------------
+    def delete_grower(grower_id):
+
+        grower = next(g for g in st.session_state.growers if g["id"] == grower_id)
+
+        # Remove all farm session keys
+        for farm in grower["farms"]:
+            farm_id = farm["id"]
+
+            keys_to_remove = [
+                f"total_{farm_id}",
+                f"cut_{farm_id}",
+                f"target_{farm_id}",
+                f"tpb_{farm_id}",
+                f"bpd_{farm_id}",
+                f"days_{farm_id}",
+            ]
+
+            for key in keys_to_remove:
+                if key in st.session_state:
+                    del st.session_state[key]
+
+        # Remove grower
+        st.session_state.growers = [
+            g for g in st.session_state.growers
+            if g["id"] != grower_id
+        ]
+
+        st.rerun()
+
+    col1, col2 = st.columns([3, 1])
+
+    with col1:
+        st.subheader(f"Grower: {selected_grower_name}")
+
+    with col2:
+        st.button(
+            "Delete Grower",
+            on_click=delete_grower,
+            args=(grower_id,),
+            type="secondary"
+        )
+
     st.divider()
 
     # -------------------------------------------------
-    # Add Farm to Grower
+    # Add Farm
     # -------------------------------------------------
-    st.subheader(f"Add Farm to {selected_grower_name}")
+    st.subheader("Add Farm")
     new_farm_name = st.text_input("Farm Number")
 
     if st.button("Add Farm"):
@@ -56,7 +101,7 @@ if st.session_state.growers:
                 "name": new_farm_name
             })
 
-            # Initialize farm keys
+            # Initialize farm session keys
             st.session_state[f"total_{farm_id}"] = 0.0
             st.session_state[f"cut_{farm_id}"] = 0.0
             st.session_state[f"target_{farm_id}"] = 0.0
@@ -75,7 +120,9 @@ if st.session_state.growers:
         farm = next(f for f in grower["farms"] if f["name"] == selected_farm_name)
         farm_id = farm["id"]
 
+        # -------------------------------------------------
         # Callbacks
+        # -------------------------------------------------
         def add_day(farm_id):
             daily = (
                 st.session_state[f"tpb_{farm_id}"] *
@@ -118,10 +165,13 @@ if st.session_state.growers:
             st.button(
                 "Delete Farm",
                 on_click=delete_farm,
-                args=(farm_id,)
+                args=(farm_id,),
+                type="secondary"
             )
 
+        # -------------------------------------------------
         # Inputs
+        # -------------------------------------------------
         st.number_input("Total Tonnes", min_value=0.0, key=f"total_{farm_id}")
         st.number_input("Tonnes Cut", min_value=0.0, key=f"cut_{farm_id}")
         st.number_input("Target %", min_value=0.0, max_value=100.0, key=f"target_{farm_id}")
@@ -141,7 +191,9 @@ if st.session_state.growers:
 
         st.number_input("Days Planned (Projection)", min_value=0, step=1, key=f"days_{farm_id}")
 
+        # -------------------------------------------------
         # Calculations
+        # -------------------------------------------------
         total = st.session_state[f"total_{farm_id}"]
         cut = st.session_state[f"cut_{farm_id}"]
         target = st.session_state[f"target_{farm_id}"]
