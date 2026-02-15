@@ -27,8 +27,6 @@ if st.button("Add Grower"):
             "farms": []
         })
 
-        st.rerun()
-
 # -------------------------------------------------
 # Main Section
 # -------------------------------------------------
@@ -86,31 +84,31 @@ if st.session_state.growers:
     st.divider()
 
     # =================================================
-    # GROWER AGGREGATED TOTALS
+    # 🔥 GROWER AGGREGATED TOTALS (NEW SECTION)
     # =================================================
-    total_grower_tonnes = 0.0
-    total_grower_cut = 0.0
-    total_grower_target_tonnes = 0.0
+    total_grower_tonnes = 0
+    total_grower_cut = 0
+    total_grower_target_tonnes = 0
 
     for farm in grower["farms"]:
         fid = farm["id"]
 
-        total = float(st.session_state.get(f"total_{fid}", 0.0))
-        cut = float(st.session_state.get(f"cut_{fid}", 0.0))
-        target = float(st.session_state.get(f"target_{fid}", 0.0))
+        total = st.session_state.get(f"total_{fid}", 0)
+        cut = st.session_state.get(f"cut_{fid}", 0)
+        target = st.session_state.get(f"target_{fid}", 0)
 
         total_grower_tonnes += total
         total_grower_cut += cut
-        total_grower_target_tonnes += (total * target / 100.0)
+        total_grower_target_tonnes += (total * target / 100)
 
     grower_percent_cut = (
         (total_grower_cut / total_grower_tonnes) * 100
-        if total_grower_tonnes > 0 else 0.0
+        if total_grower_tonnes > 0 else 0
     )
 
     grower_target_percent = (
         (total_grower_target_tonnes / total_grower_tonnes) * 100
-        if total_grower_tonnes > 0 else 0.0
+        if total_grower_tonnes > 0 else 0
     )
 
     if grower["farms"]:
@@ -144,6 +142,129 @@ if st.session_state.growers:
             st.session_state[f"bpd_{farm_id}"] = 0.0
             st.session_state[f"days_{farm_id}"] = 0
 
-            st.rerun()  # 🔥 ensures totals update immediately
+    # -------------------------------------------------
+    # Farm Section
+    # -------------------------------------------------
+    if grower["farms"]:
 
-    # ------------------------------------------
+        farm_names = [f["name"] for f in grower["farms"]]
+        selected_farm_name = st.selectbox("Select Farm", farm_names)
+
+        farm = next(f for f in grower["farms"] if f["name"] == selected_farm_name)
+        farm_id = farm["id"]
+
+        def add_day(farm_id):
+            daily = (
+                st.session_state[f"tpb_{farm_id}"] *
+                st.session_state[f"bpd_{farm_id}"]
+            )
+
+            st.session_state[f"cut_{farm_id}"] = min(
+                st.session_state[f"cut_{farm_id}"] + daily,
+                st.session_state[f"total_{farm_id}"]
+            )
+
+        def delete_farm(farm_id):
+
+            grower["farms"] = [
+                f for f in grower["farms"]
+                if f["id"] != farm_id
+            ]
+
+            keys_to_remove = [
+                f"total_{farm_id}",
+                f"cut_{farm_id}",
+                f"target_{farm_id}",
+                f"tpb_{farm_id}",
+                f"bpd_{farm_id}",
+                f"days_{farm_id}",
+            ]
+
+            for key in keys_to_remove:
+                if key in st.session_state:
+                    del st.session_state[key]
+
+            st.rerun()
+
+        col1, col2 = st.columns([3, 1])
+
+        with col1:
+            st.subheader(f"Farm {selected_farm_name}")
+
+        with col2:
+            st.button(
+                "Delete Farm",
+                on_click=delete_farm,
+                args=(farm_id,),
+                type="secondary"
+            )
+
+        # Inputs
+        st.number_input("Total Tonnes", min_value=0.0, key=f"total_{farm_id}")
+        st.number_input("Tonnes Cut", min_value=0.0, key=f"cut_{farm_id}")
+        st.number_input("Target %", min_value=0.0, max_value=100.0, key=f"target_{farm_id}")
+
+        st.divider()
+
+        st.number_input("Tonnes per Bin", min_value=0.0, key=f"tpb_{farm_id}")
+        st.number_input("Bins per Day", min_value=0.0, key=f"bpd_{farm_id}")
+
+        st.button(
+            "Add One Day Production",
+            on_click=add_day,
+            args=(farm_id,)
+        )
+
+        st.divider()
+
+        st.number_input("Days Planned (Projection)", min_value=0, step=1, key=f"days_{farm_id}")
+
+        # Calculations
+        total = st.session_state[f"total_{farm_id}"]
+        cut = st.session_state[f"cut_{farm_id}"]
+        target = st.session_state[f"target_{farm_id}"]
+        tpb = st.session_state[f"tpb_{farm_id}"]
+        bpd = st.session_state[f"bpd_{farm_id}"]
+        days = st.session_state[f"days_{farm_id}"]
+
+        remaining = total - cut
+        percent_cut = (cut / total * 100) if total > 0 else 0
+
+        target_tonnes = total * target / 100
+        tonnes_needed = max(target_tonnes - cut, 0)
+
+        daily_capacity = tpb * bpd
+        bins_required = tonnes_needed / tpb if tpb > 0 else 0
+
+        if daily_capacity > 0:
+            days_required = math.ceil(tonnes_needed / daily_capacity)
+        else:
+            days_required = 0
+
+        projected_tonnes = days * daily_capacity
+        projected_total_cut = min(cut + projected_tonnes, total)
+        projected_percent = (projected_total_cut / total * 100) if total > 0 else 0
+
+        # Output
+        st.write(f"Tonnes Remaining: {remaining:.2f}")
+        st.write(f"% Cut (Farm): {percent_cut:.2f}%")
+
+        st.divider()
+
+        st.write(f"Target Tonnes ({target}%): {target_tonnes:.2f}")
+        st.write(f"Tonnes Required: {tonnes_needed:.2f}")
+        st.write(f"Bins Required: {math.ceil(bins_required) if bins_required > 0 else 0}")
+        st.write(f"Days Remaining to Hit Target: {days_required}")
+
+        st.divider()
+
+        st.subheader("Projection")
+        st.write(f"Projected Additional Tonnes: {projected_tonnes:.2f}")
+        st.write(f"Projected Total Cut: {projected_total_cut:.2f}")
+        st.write(f"Projected % Cut: {projected_percent:.2f}%")
+
+    else:
+        st.info("No farms added for this grower yet.")
+
+else:
+    st.info("No growers added yet.")
