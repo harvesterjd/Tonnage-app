@@ -33,17 +33,20 @@ def load_data():
 def save_data():
     with open(DATA_FILE, "w") as f:
         json.dump(st.session_state.data, f, indent=4)
-
 # -----------------------------
-# Initialise Session
+# Initialise Session (Fully Safe)
 # -----------------------------
 if "data" not in st.session_state:
     st.session_state.data = load_data()
 
+# If data is corrupted or not a dict, reset it
+if not isinstance(st.session_state.data, dict):
+    st.session_state.data = {"growers": []}
+
+# Ensure growers exists
 if "growers" not in st.session_state.data:
     st.session_state.data["growers"] = []
 
-st.title("Tonnage Planner")
 
 # -----------------------------
 # Add Grower
