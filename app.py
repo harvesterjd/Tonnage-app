@@ -37,6 +37,13 @@ if st.session_state.growers:
 
     grower = next(g for g in st.session_state.growers if g["name"] == selected_grower_name)
 
+    # -------- Delete Grower --------
+    if st.button("Delete Grower"):
+        st.session_state.growers = [
+            g for g in st.session_state.growers if g["id"] != grower["id"]
+        ]
+        st.rerun()
+
     st.divider()
 
     # -------------------------------
@@ -70,10 +77,16 @@ if st.session_state.growers:
 
         farm = next(f for f in grower["farms"] if f["name"] == selected_farm_name)
 
+        # -------- Delete Farm --------
+        if st.button("Delete Farm"):
+            grower["farms"] = [
+                f for f in grower["farms"] if f["id"] != farm["id"]
+            ]
+            st.rerun()
+
         st.subheader(f"Farm {farm['name']}")
 
         # -------- Inputs --------
-
         farm["total"] = st.number_input(
             "Total Tonnes",
             min_value=0.0,
@@ -106,7 +119,6 @@ if st.session_state.growers:
         )
 
         # -------- Add One Day Production --------
-
         if st.button("Add One Day Production"):
             daily_production = farm["tpb"] * farm["bpd"]
             farm["cut"] = min(farm["cut"] + daily_production, farm["total"])
@@ -122,7 +134,6 @@ if st.session_state.growers:
         # -------------------------------
         # CALCULATIONS
         # -------------------------------
-
         total = farm["total"]
         cut = farm["cut"]
         target = farm["target"]
@@ -144,7 +155,6 @@ if st.session_state.growers:
         projected_percent = (projected_total_cut / total * 100) if total > 0 else 0
 
         # -------- Farm Results --------
-
         st.divider()
         st.subheader("Farm Results")
 
@@ -163,7 +173,6 @@ if st.session_state.growers:
         # -------------------------------
         # GROWER TOTALS
         # -------------------------------
-
         total_grower_tonnes = sum(f["total"] for f in grower["farms"])
         total_grower_cut = sum(f["cut"] for f in grower["farms"])
         total_grower_target_tonnes = sum(
