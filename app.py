@@ -120,19 +120,19 @@ if st.session_state.growers:
         )
 
         if st.button("Add One Day Production", key=f"prod_{farm['id']}"):
-    daily = farm["tpb"] * farm["bpd"]
-    farm["cut"] = min(farm["cut"] + daily, farm["total"])
-    st.rerun()
+            daily = farm["tpb"] * farm["bpd"]
+            farm["cut"] = min(farm["cut"] + daily, farm["total"])
+            st.rerun()
 
 
-        st.divider()
+            st.divider()
 
-        farm["days"] = st.number_input(
+            farm["days"] = st.number_input(
             "Days Planned (Projection)",
-            min_value=0,
-            step=1,
-            value=int(farm.get("days", 0)),
-            key=f"days_{farm['id']}"
+             min_value=0,
+             step=1,
+             value=int(farm.get("days", 0)),
+             key=f"days_{farm['id']}"
         )
 
         # -------------------------------
