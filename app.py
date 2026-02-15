@@ -141,6 +141,7 @@ if st.session_state.growers:
             st.session_state[f"tpb_{farm_id}"] = 0.0
             st.session_state[f"bpd_{farm_id}"] = 0.0
             st.session_state[f"days_{farm_id}"] = 0
+        st.rerun()
 
     # -------------------------------------------------
     # Farm Section
