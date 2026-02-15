@@ -116,11 +116,33 @@ if st.session_state.growers:
         st.divider()
         st.subheader("Target & Production Settings")
 
-        target_percent = st.number_input("Grower Target %", min_value=0.0, max_value=100.0, value=0.0)
+         # Initialize grower production settings if not set
+if "target_percent" not in grower:
+    grower["target_percent"] = 0.0
+if "bin_weight" not in grower:
+    grower["bin_weight"] = 0.0
+if "bins_per_day" not in grower:
+    grower["bins_per_day"] = 0.0
 
-        bin_weight = st.number_input("Tonnes per Bin", min_value=0.0, value=0.0)
+grower["target_percent"] = st.number_input(
+    "Grower Target %",
+    min_value=0.0,
+    max_value=100.0,
+    value=float(grower["target_percent"])
+)
 
-        bins_per_day = st.number_input("Bins per Day", min_value=0.0, value=0.0)
+grower["bin_weight"] = st.number_input(
+    "Tonnes per Bin",
+    min_value=0.0,
+    value=float(grower["bin_weight"])
+)
+
+grower["bins_per_day"] = st.number_input(
+    "Bins per Day",
+    min_value=0.0,
+    value=float(grower["bins_per_day"])
+)
+
 
         # -------------------------------
         # CALCULATIONS
@@ -146,22 +168,23 @@ if st.session_state.growers:
         # -------------------------------
         # ADD ONE DAY PRODUCTION (Grower Level)
         # -------------------------------
-        if st.button("Add One Day Production (Grower)"):
-            daily_tonnes = bin_weight * bins_per_day
+       if st.button("Add One Day Production (Grower)"):
+    daily_tonnes = grower["bin_weight"] * grower["bins_per_day"]
 
-            remaining_to_allocate = daily_tonnes
+    remaining_to_allocate = daily_tonnes
 
-            for farm in grower["farms"]:
-                if remaining_to_allocate <= 0:
-                    break
+    for farm in grower["farms"]:
+        if remaining_to_allocate <= 0:
+            break
 
-                farm_remaining = farm["total"] - farm["cut"]
-                allocation = min(farm_remaining, remaining_to_allocate)
+        farm_remaining = farm["total"] - farm["cut"]
+        allocation = min(farm_remaining, remaining_to_allocate)
 
-                farm["cut"] += allocation
-                remaining_to_allocate -= allocation
+        farm["cut"] += allocation
+        remaining_to_allocate -= allocation
 
-            st.rerun()
+    st.rerun()
+
 
     else:
         st.info("No farms added yet.")
