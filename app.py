@@ -115,8 +115,7 @@ if st.session_state.growers:
         # -------------------------------
         st.divider()
         st.subheader("Target & Production Settings")
-
-         # Initialize grower production settings if not set
+        # Initialize grower production settings if not set
 if "target_percent" not in grower:
     grower["target_percent"] = 0.0
 if "bin_weight" not in grower:
@@ -142,6 +141,9 @@ grower["bins_per_day"] = st.number_input(
     min_value=0.0,
     value=float(grower["bins_per_day"])
 )
+
+              
+
 
 
         # -------------------------------
