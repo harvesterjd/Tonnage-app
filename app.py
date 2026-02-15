@@ -45,7 +45,6 @@ if st.session_state.growers:
 
         grower = next(g for g in st.session_state.growers if g["id"] == grower_id)
 
-        # Remove all farm session keys
         for farm in grower["farms"]:
             farm_id = farm["id"]
 
@@ -62,7 +61,6 @@ if st.session_state.growers:
                 if key in st.session_state:
                     del st.session_state[key]
 
-        # Remove grower
         st.session_state.growers = [
             g for g in st.session_state.growers
             if g["id"] != grower_id
@@ -207,13 +205,23 @@ if st.session_state.growers:
         target_tonnes = total * target / 100
         tonnes_needed = max(target_tonnes - cut, 0)
 
-        bins_required = tonnes_needed / tpb if tpb > 0 else 0
-        days_required = bins_required / bpd if bpd > 0 else 0
+        daily_capacity = tpb * bpd
 
-        projected_tonnes = days * bpd * tpb
+        bins_required = tonnes_needed / tpb if tpb > 0 else 0
+
+        # ✅ Correct Days Remaining Calculation
+        if daily_capacity > 0:
+            days_required = math.ceil(tonnes_needed / daily_capacity)
+        else:
+            days_required = 0
+
+        projected_tonnes = days * daily_capacity
         projected_total_cut = min(cut + projected_tonnes, total)
         projected_percent = (projected_total_cut / total * 100) if total > 0 else 0
 
+        # -------------------------------------------------
+        # Output
+        # -------------------------------------------------
         st.write(f"Tonnes Remaining: {remaining:.2f}")
         st.write(f"% Cut: {percent_cut:.2f}%")
 
@@ -222,7 +230,7 @@ if st.session_state.growers:
         st.write(f"Target Tonnes ({target}%): {target_tonnes:.2f}")
         st.write(f"Tonnes Required: {tonnes_needed:.2f}")
         st.write(f"Bins Required: {math.ceil(bins_required) if bins_required > 0 else 0}")
-        st.write(f"Days Required: {days_required:.2f}")
+        st.write(f"Days Remaining to Hit Target: {days_required}")
 
         st.divider()
 
