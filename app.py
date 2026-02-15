@@ -217,8 +217,8 @@ st.write(f"Total Grower Tonnes Cut: {total_grower_cut:.2f}")
 st.write(f"Total Grower % Cut: {grower_percent_cut:.2f}%")
 st.write(f"Grower Target Progress: {grower_target_progress:.2f}%")
 
-    else:
-        st.info("No farms added for this grower yet.")
+else:
+     st.info("No farms added for this grower yet.")
 
 else:
     st.info("No growers added yet.")
