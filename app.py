@@ -88,12 +88,18 @@ if st.session_state.growers:
             key=f"total_{farm['id']}"
         )
 
-        farm["cut"] = st.number_input(
+        cut_key = f"cut_{farm['id']}"
+
+            if cut_key not in st.session_state:
+            st.session_state[cut_key] = farm.get("cut", 0.0)
+
+            farm["cut"] = st.number_input(
             "Tonnes Cut",
             min_value=0.0,
-            value=float(farm.get("cut", 0.0)),
-            key=f"cut_{farm['id']}"
+            value=st.session_state[cut_key],
+            key=cut_key
         )
+
 
         farm["target"] = st.number_input(
             "Target %",
