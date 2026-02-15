@@ -143,15 +143,57 @@ if st.session_state.growers:
              key=f"days_{farm['id']}"
         )
 
-        # -------------------------------
-        # FARM CALCULATIONS
-        # -------------------------------
-        total = farm["total"]
-        cut = farm["cut"]
-        target = farm["target"]
-        tpb = farm["tpb"]
-        bpd = farm["bpd"]
-        days = farm["days"]
+       
+    # -------------------------------
+    # FARM INPUTS
+    # -------------------------------
+
+farm["total"] = st.number_input(
+    "Total Tonnes",
+    min_value=0.0,
+    value=float(farm.get("total", 0.0)),
+    key=f"total_{farm['id']}"
+)
+
+cut_key = f"cut_{farm['id']}"
+
+if cut_key not in st.session_state:
+    st.session_state[cut_key] = float(farm.get("cut", 0.0))
+
+farm["cut"] = st.number_input(
+    "Tonnes Cut",
+    min_value=0.0,
+    key=cut_key
+)
+
+farm["target"] = st.number_input(
+    "Target %",
+    min_value=0.0,
+    max_value=100.0,
+    value=float(farm.get("target", 0.0)),
+    key=f"target_{farm['id']}"
+)
+
+farm["tpb"] = st.number_input(
+    "Tonnes per Bin",
+    min_value=0.0,
+    value=float(farm.get("tpb", 0.0)),
+    key=f"tpb_{farm['id']}"
+)
+
+farm["bpd"] = st.number_input(
+    "Bins per Day",
+    min_value=0.0,
+    value=float(farm.get("bpd", 0.0)),
+    key=f"bpd_{farm['id']}"
+)
+
+if st.button("Add One Day Production", key=f"prod_{farm['id']}"):
+    daily = farm["tpb"] * farm["bpd"]
+    new_cut = min(st.session_state[cut_key] + daily, farm["total"])
+    st.session_state[cut_key] = new_cut
+    farm["cut"] = new_cut
+    st.rerun()
 
         remaining = total - cut
         percent_cut = (cut / total * 100) if total > 0 else 0
