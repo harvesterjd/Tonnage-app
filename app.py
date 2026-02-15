@@ -110,64 +110,91 @@ if st.session_state.growers:
             st.session_state[f"days_{farm_id}"] = 0
 
     # -------------------------------------------------
-    # Farm Section
-    # -------------------------------------------------
-    if grower["farms"]:
+# ALL FARMS TABLE VIEW
+# -------------------------------------------------
 
-        farm_names = [f["name"] for f in grower["farms"]]
-        selected_farm_name = st.selectbox("Select Farm", farm_names)
+total_all = 0
+cut_all = 0
+weighted_tpb_total = 0
 
-        farm = next(f for f in grower["farms"] if f["name"] == selected_farm_name)
-        farm_id = farm["id"]
+st.subheader("Farm Summary")
 
-        # -------------------------------------------------
-        # Callbacks
-        # -------------------------------------------------
-        def add_day(farm_id):
-            daily = (
-                st.session_state[f"tpb_{farm_id}"] *
-                st.session_state[f"bpd_{farm_id}"]
-            )
+header = st.columns(6)
+header[0].write("**Farm**")
+header[1].write("**Total**")
+header[2].write("**Cut**")
+header[3].write("**Remaining**")
+header[4].write("**% Cut**")
+header[5].write("**TPB**")
 
-            st.session_state[f"cut_{farm_id}"] = min(
-                st.session_state[f"cut_{farm_id}"] + daily,
-                st.session_state[f"total_{farm_id}"]
-            )
+for farm in grower["farms"]:
 
-        def delete_farm(farm_id):
+    farm_id = farm["id"]
 
-            grower["farms"] = [
-                f for f in grower["farms"]
-                if f["id"] != farm_id
-            ]
+    total = st.session_state.get(f"total_{farm_id}", 0.0)
+    cut = st.session_state.get(f"cut_{farm_id}", 0.0)
+    tpb = st.session_state.get(f"tpb_{farm_id}", 0.0)
 
-            keys_to_remove = [
-                f"total_{farm_id}",
-                f"cut_{farm_id}",
-                f"target_{farm_id}",
-                f"tpb_{farm_id}",
-                f"bpd_{farm_id}",
-                f"days_{farm_id}",
-            ]
+    remaining = total - cut
+    percent_cut = (cut / total * 100) if total > 0 else 0
 
-            for key in keys_to_remove:
-                if key in st.session_state:
-                    del st.session_state[key]
+    row = st.columns(6)
+    row[0].write(farm["name"])
+    row[1].write(f"{total:.2f}")
+    row[2].write(f"{cut:.2f}")
+    row[3].write(f"{remaining:.2f}")
+    row[4].write(f"{percent_cut:.2f}%")
+    row[5].write(f"{tpb:.2f}")
 
-            st.rerun()
+    total_all += total
+    cut_all += cut
+    weighted_tpb_total += total * tpb
 
-        col1, col2 = st.columns([3, 1])
+st.divider()
 
-        with col1:
-            st.subheader(f"Farm {selected_farm_name}")
+remaining_all = total_all - cut_all
+percent_all = (cut_all / total_all * 100) if total_all > 0 else 0
+average_tpb = (weighted_tpb_total / total_all) if total_all > 0 else 0
 
-        with col2:
-            st.button(
-                "Delete Farm",
-                on_click=delete_farm,
-                args=(farm_id,),
-                type="secondary"
-            )
+total_row = st.columns(6)
+total_row[0].write("**TOTAL**")
+total_row[1].write(f"**{total_all:.2f}**")
+total_row[2].write(f"**{cut_all:.2f}**")
+total_row[3].write(f"**{remaining_all:.2f}**")
+total_row[4].write(f"**{percent_all:.2f}%**")
+total_row[5].write(f"**{average_tpb:.2f}**")
+
+# -------------------------------------------------
+# GROWER TARGET SECTION
+# -------------------------------------------------
+
+st.divider()
+st.subheader("Grower Target Planning")
+
+grower_target = st.number_input(
+    "Grower Target %",
+    min_value=0.0,
+    max_value=100.0,
+    key=f"grower_target_{grower_id}"
+)
+
+days_remaining = st.number_input(
+    "Days Remaining",
+    min_value=1,
+    step=1,
+    key=f"grower_days_{grower_id}"
+)
+
+target_tonnes = total_all * grower_target / 100
+tonnes_needed = max(target_tonnes - cut_all, 0)
+
+bins_required = tonnes_needed / average_tpb if average_tpb > 0 else 0
+bins_per_day_required = bins_required / days_remaining if days_remaining > 0 else 0
+
+st.write(f"Target Tonnes: {target_tonnes:.2f}")
+st.write(f"Tonnes Required: {tonnes_needed:.2f}")
+st.write(f"Bins Required: {math.ceil(bins_required) if bins_required > 0 else 0}")
+st.write(f"Bins Per Day Required: {bins_per_day_required:.2f}")
 
         # -------------------------------------------------
         # Inputs
