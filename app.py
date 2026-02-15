@@ -1,116 +1,188 @@
 import streamlit as st
-from datetime import date
+import math
+import uuid
 
-st.set_page_config(page_title="Tonnage Tracker", layout="wide")
+st.set_page_config(page_title="Grower Farm Tonnage Tracker", layout="wide")
 
-# ----------------------------
-# SESSION STATE INITIALISATION
-# ----------------------------
+st.title("Grower Farm Tonnage Tracker")
+
+# -------------------------------------------------
+# INITIALISE SESSION STATE
+# -------------------------------------------------
 if "growers" not in st.session_state:
-    st.session_state.growers = {}
+    st.session_state.growers = []
 
-# ----------------------------
+# -------------------------------------------------
 # ADD GROWER
-# ----------------------------
-st.header("Add Grower")
+# -------------------------------------------------
+st.subheader("Add New Grower")
+new_grower_name = st.text_input("Grower Name")
 
-with st.form("add_grower"):
-    new_grower = st.text_input("Grower Name")
-    grower_target = st.number_input("Grower Target (Tonnes)", min_value=0.0, step=1.0)
-    end_date = st.date_input("Season End Date")
-    submit_grower = st.form_submit_button("Add Grower")
+if st.button("Add Grower"):
+    if new_grower_name.strip():
 
-    if submit_grower and new_grower:
-        st.session_state.growers[new_grower] = {
-            "target": grower_target,
-            "end_date": end_date,
-            "farms": {}
-        }
+        st.session_state.growers.append({
+            "id": str(uuid.uuid4()),
+            "name": new_grower_name,
+            "farms": []
+        })
 
-# ----------------------------
-# DISPLAY GROWERS
-# ----------------------------
-st.header("Growers")
+        st.rerun()
 
-for grower_name, grower_data in st.session_state.growers.items():
+# -------------------------------------------------
+# MAIN SECTION
+# -------------------------------------------------
+if st.session_state.growers:
 
-    st.subheader(f"{grower_name}")
+    grower_names = [g["name"] for g in st.session_state.growers]
+    selected_grower_name = st.selectbox("Select Grower", grower_names)
 
-    grower_target = grower_data["target"]
-    end_date = grower_data["end_date"]
-    farms = grower_data["farms"]
+    grower = next(g for g in st.session_state.growers if g["name"] == selected_grower_name)
+    grower_id = grower["id"]
 
-    # ----------------------------
-    # DAYS REMAINING (Grower Level)
-    # ----------------------------
-    days_remaining = (end_date - date.today()).days
-    days_remaining = max(days_remaining, 0)
+    st.divider()
+    st.subheader(f"Grower: {selected_grower_name}")
 
-    st.write(f"Target: {grower_target} T")
-    st.write(f"Days Remaining: {days_remaining}")
-
-    # ----------------------------
+    # -------------------------------------------------
     # ADD FARM
-    # ----------------------------
-    with st.form(f"add_farm_{grower_name}"):
-        farm_name = st.text_input("Farm Name", key=f"farm_{grower_name}")
-        submit_farm = st.form_submit_button("Add Farm")
+    # -------------------------------------------------
+    st.markdown("### Add Farm")
+    new_farm_name = st.text_input("Farm Name")
 
-        if submit_farm and farm_name:
-            farms[farm_name] = {
-                "actual": 0.0
-            }
+    if st.button("Add Farm"):
+        if new_farm_name.strip():
 
-    # ----------------------------
-    # FARM TABLE
-    # ----------------------------
-    total_actual = 0
+            farm_id = str(uuid.uuid4())
 
-    for farm_name, farm_data in list(farms.items()):
-        col1, col2, col3, col4 = st.columns(4)
+            grower["farms"].append({
+                "id": farm_id,
+                "name": new_farm_name
+            })
 
-        with col1:
-            st.write(farm_name)
+            # initialise session keys safely
+            st.session_state.setdefault(f"total_{farm_id}", 0.0)
+            st.session_state.setdefault(f"cut_{farm_id}", 0.0)
+            st.session_state.setdefault(f"tpb_{farm_id}", 0.0)
 
-        with col2:
-            farm_data["actual"] = st.number_input(
-                "Actual Tonnes",
-                value=farm_data["actual"],
-                step=1.0,
-                key=f"{grower_name}_{farm_name}"
+            st.rerun()
+
+    # -------------------------------------------------
+    # ALL FARMS VIEW
+    # -------------------------------------------------
+    if grower["farms"]:
+
+        st.divider()
+        st.subheader("Farm Summary")
+
+        total_all = 0
+        cut_all = 0
+        weighted_tpb_total = 0
+
+        header = st.columns(6)
+        header[0].write("**Farm**")
+        header[1].write("**Total Tonnes**")
+        header[2].write("**Tonnes Cut**")
+        header[3].write("**Remaining**")
+        header[4].write("**% Cut**")
+        header[5].write("**Tonnes / Bin**")
+
+        for farm in grower["farms"]:
+
+            farm_id = farm["id"]
+
+            st.session_state.setdefault(f"total_{farm_id}", 0.0)
+            st.session_state.setdefault(f"cut_{farm_id}", 0.0)
+            st.session_state.setdefault(f"tpb_{farm_id}", 0.0)
+
+            total = st.session_state[f"total_{farm_id}"]
+            cut = st.session_state[f"cut_{farm_id}"]
+            tpb = st.session_state[f"tpb_{farm_id}"]
+
+            remaining = total - cut
+            percent_cut = (cut / total * 100) if total > 0 else 0
+
+            row = st.columns(6)
+
+            row[0].write(farm["name"])
+
+            row[1].number_input(
+                "",
+                min_value=0.0,
+                key=f"total_{farm_id}"
             )
 
-        with col3:
-            percent = (
-                (farm_data["actual"] / grower_target) * 100
-                if grower_target > 0 else 0
+            row[2].number_input(
+                "",
+                min_value=0.0,
+                key=f"cut_{farm_id}"
             )
-            st.write(f"{percent:.1f}% of Grower Target")
 
-        with col4:
-            if st.button("Delete Farm", key=f"del_{grower_name}_{farm_name}"):
-                del farms[farm_name]
-                st.rerun()
+            row[3].write(f"{remaining:.2f}")
+            row[4].write(f"{percent_cut:.2f}%")
 
-        total_actual += farm_data["actual"]
+            row[5].number_input(
+                "",
+                min_value=0.0,
+                key=f"tpb_{farm_id}"
+            )
 
-    # ----------------------------
-    # GROWER TOTALS
-    # ----------------------------
-    st.markdown("---")
-    col1, col2, col3 = st.columns(3)
+            total_all += total
+            cut_all += cut
+            weighted_tpb_total += total * tpb
 
-    with col1:
-        st.write("**Total Actual**")
+        st.divider()
 
-    with col2:
-        st.write(f"**{total_actual:.1f} T**")
+        remaining_all = total_all - cut_all
+        percent_all = (cut_all / total_all * 100) if total_all > 0 else 0
+        average_tpb = (weighted_tpb_total / total_all) if total_all > 0 else 0
 
-    with col3:
-        total_percent = (
-            (total_actual / grower_target) * 100
-            if grower_target > 0 else 0
+        total_row = st.columns(6)
+        total_row[0].write("**TOTAL**")
+        total_row[1].write(f"**{total_all:.2f}**")
+        total_row[2].write(f"**{cut_all:.2f}**")
+        total_row[3].write(f"**{remaining_all:.2f}**")
+        total_row[4].write(f"**{percent_all:.2f}%**")
+        total_row[5].write(f"**{average_tpb:.2f}**")
+
+        # -------------------------------------------------
+        # GROWER TARGET SECTION (OPTION A)
+        # -------------------------------------------------
+        st.divider()
+        st.subheader("Grower Target Planning")
+
+        grower_target_percent = st.number_input(
+            "Grower Target %",
+            min_value=0.0,
+            max_value=200.0,
+            value=100.0,
+            step=1.0,
+            key=f"grower_target_{grower_id}"
         )
-        st.write(f"**{total_percent:.1f}% of Target**")
 
-    st.markdown("------")
+        days_remaining = st.number_input(
+            "Days Remaining",
+            min_value=1,
+            value=7,
+            step=1,
+            key=f"grower_days_{grower_id}"
+        )
+
+        target_tonnes = total_all * (grower_target_percent / 100)
+        tonnes_needed = max(target_tonnes - cut_all, 0)
+
+        bins_required = tonnes_needed / average_tpb if average_tpb > 0 else 0
+        bins_per_day_required = bins_required / days_remaining if days_remaining > 0 else 0
+
+        st.markdown("### Target Requirements")
+
+        colA, colB, colC = st.columns(3)
+
+        colA.metric("Target Tonnes", f"{target_tonnes:.2f}")
+        colB.metric("Tonnes Required", f"{tonnes_needed:.2f}")
+        colC.metric("Bins Per Day Required", f"{bins_per_day_required:.2f}")
+
+    else:
+        st.info("No farms added for this grower yet.")
+
+else:
+    st.info("No growers added yet.")
