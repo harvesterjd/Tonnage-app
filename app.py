@@ -149,12 +149,23 @@ grower["bins_per_day"] = st.number_input(
         # -------------------------------
         # CALCULATIONS
         # -------------------------------
+
+        target_percent = grower["target_percent"]
+        bin_weight = grower["bin_weight"]
+        bins_per_day = grower["bins_per_day"]
+
         target_tonnes = total_tonnes * target_percent / 100
         tonnes_remaining = max(target_tonnes - total_cut, 0)
 
-        total_bins_required = (tonnes_remaining / bin_weight) if bin_weight > 0 else 0
+        total_bins_required = (
+            tonnes_remaining / bin_weight
+            if bin_weight > 0 else 0
+        )
 
-        days_required = (total_bins_required / bins_per_day) if bins_per_day > 0 else 0
+        days_required = (
+            total_bins_required / bins_per_day
+            if bins_per_day > 0 else 0
+        )
 
         # -------------------------------
         # RESULTS
