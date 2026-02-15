@@ -127,7 +127,9 @@ if st.session_state.growers:
 
         if st.button("Add One Day Production", key=f"prod_{farm['id']}"):
             daily = farm["tpb"] * farm["bpd"]
-            farm["cut"] = min(farm["cut"] + daily, farm["total"])
+            new_cut = min(st.session_state[cut_key] + daily, farm["total"])
+            st.session_state[cut_key] = new_cut
+            farm["cut"] = new_cut
             st.rerun()
 
 
