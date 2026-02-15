@@ -10,6 +10,20 @@ st.title("Grower Production Dashboard")
 # -----------------------------
 if "growers" not in st.session_state:
     st.session_state.growers = []
+# Repair growers structure if needed
+for grower in st.session_state.growers:
+
+    if "farms" not in grower:
+        grower["farms"] = []
+
+    if "target_percent" not in grower:
+        grower["target_percent"] = 0.0
+
+    if "bin_weight" not in grower:
+        grower["bin_weight"] = 0.0
+
+    if "bins_per_day" not in grower:
+        grower["bins_per_day"] = 0.0
 
 # -----------------------------
 # ADD GROWER
