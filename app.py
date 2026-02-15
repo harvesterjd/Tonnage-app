@@ -90,7 +90,7 @@ if st.session_state.growers:
 
         cut_key = f"cut_{farm['id']}"
 
-            if cut_key not in st.session_state:
+     if cut_key not in st.session_state:
             st.session_state[cut_key] = farm.get("cut", 0.0)
 
             farm["cut"] = st.number_input(
