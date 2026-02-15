@@ -119,9 +119,9 @@ if st.session_state.growers:
                 )
 
            with col3:
-    step = grower["bin_weight"] * grower["bins_per_day"]
+               step = grower["bin_weight"] * grower["bins_per_day"]
 
-    c1, c2, c3 = st.columns([3,1,1])
+               c1, c2, c3 = st.columns([3,1,1])
 
     with c1:
         farm["cut"] = st.number_input(
