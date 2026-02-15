@@ -117,36 +117,49 @@ if st.session_state.growers:
                 c1, c2, c3 = st.columns([3, 1, 1])
 
                 # Tonnes Cut box
-                with c1:
-                    farm["cut"] = st.number_input(
-                        "Tonnes Cut",
-                        min_value=0.0,
-                        max_value=float(farm["total"]),
-                        value=float(farm["cut"]),
-                        key=f"cut_{farm['id']}"
-                    )
+                step = grower["bin_weight"] * grower["bins_per_day"]
 
-                # PLUS
-                with c2:
-                    if st.button("➕", key=f"plus_{farm['id']}"):
-                        if step > 0:
-                            farm["cut"] = min(
-                                farm["cut"] + step,
-                                farm["total"]
-                            )
-                            save_data()
-                            st.rerun()
+cut_key = f"cut_{farm['id']}"
 
-                # MINUS
-                with c3:
-                    if st.button("➖", key=f"minus_{farm['id']}"):
-                        if step > 0:
-                            farm["cut"] = max(
-                                farm["cut"] - step,
-                                0
-                            )
-                            save_data()
-                            st.rerun()
+# Ensure key exists
+if cut_key not in st.session_state:
+    st.session_state[cut_key] = float(farm["cut"])
+
+c1, c2, c3 = st.columns([3, 1, 1])
+
+# Tonnes Cut box
+with c1:
+    st.number_input(
+        "Tonnes Cut",
+        min_value=0.0,
+        max_value=float(farm["total"]),
+        key=cut_key
+    )
+
+# PLUS button
+with c2:
+    if st.button("➕", key=f"plus_{farm['id']}"):
+        if step > 0:
+            st.session_state[cut_key] = min(
+                st.session_state[cut_key] + step,
+                farm["total"]
+            )
+            save_data()
+            st.rerun()
+
+# MINUS button
+with c3:
+    if st.button("➖", key=f"minus_{farm['id']}"):
+        if step > 0:
+            st.session_state[cut_key] = max(
+                st.session_state[cut_key] - step,
+                0
+            )
+            save_data()
+            st.rerun()
+
+# Sync back into farm data
+farm["cut"] = st.session_state[cut_key]
 
             # DELETE FARM
             if st.button("Delete Farm", key=f"delete_{farm['id']}"):
