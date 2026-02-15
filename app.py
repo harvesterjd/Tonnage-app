@@ -105,61 +105,69 @@ if st.session_state.growers:
 
         for farm in grower["farms"]:
 
-            col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns(3)
 
-            with col1:
-                st.markdown(f"**{farm['name']}**")
+    # Farm Name
+    with col1:
+        st.markdown(f"**{farm['name']}**")
 
-            with col2:
-                farm["total"] = st.number_input(
-                    "Total Tonnes",
-                    min_value=0.0,
-                    value=float(farm["total"]),
-                    key=f"total_{farm['id']}"
-                )
-
-           with col3:
-               step = grower["bin_weight"] * grower["bins_per_day"]
-
-               c1, c2, c3 = st.columns([3,1,1])
-
-    with c1:
-        farm["cut"] = st.number_input(
-            "Tonnes Cut",
+    # Total Tonnes
+    with col2:
+        farm["total"] = st.number_input(
+            "Total Tonnes",
             min_value=0.0,
-            max_value=float(farm["total"]),
-            value=float(farm["cut"]),
-            key=f"cut_{farm['id']}"
+            value=float(farm["total"]),
+            key=f"total_{farm['id']}"
         )
 
-    with c2:
-        if st.button("➕", key=f"plus_{farm['id']}"):
-            if step > 0:
-                farm["cut"] = min(
-                    farm["cut"] + step,
-                    farm["total"]
-                )
-                save_data()
-                st.rerun()
+    # Tonnes Cut + Buttons
+    with col3:
 
-    with c3:
-        if st.button("➖", key=f"minus_{farm['id']}"):
-            if step > 0:
-                farm["cut"] = max(
-                    farm["cut"] - step,
-                    0
-                )
-                save_data()
-                st.rerun()
+        step = grower["bin_weight"] * grower["bins_per_day"]
 
+        c1, c2, c3 = st.columns([3,1,1])
 
-            if st.button("Delete Farm", key=f"delete_{farm['id']}"):
-                grower["farms"] = [
-                    f for f in grower["farms"]
-                    if f["id"] != farm["id"]
-                ]
-                save_data()
-                st.rerun()
+        # Tonnes Cut Box
+        with c1:
+            farm["cut"] = st.number_input(
+                "Tonnes Cut",
+                min_value=0.0,
+                max_value=float(farm["total"]),
+                value=float(farm["cut"]),
+                key=f"cut_{farm['id']}"
+            )
+
+        # Plus Button
+        with c2:
+            if st.button("➕", key=f"plus_{farm['id']}"):
+                if step > 0:
+                    farm["cut"] = min(
+                        farm["cut"] + step,
+                        farm["total"]
+                    )
+                    save_data()
+                    st.rerun()
+
+        # Minus Button
+        with c3:
+            if st.button("➖", key=f"minus_{farm['id']}"):
+                if step > 0:
+                    farm["cut"] = max(
+                        farm["cut"] - step,
+                        0
+                    )
+                    save_data()
+                    st.rerun()
+
+    # Delete Farm Button
+    if st.button("Delete Farm", key=f"delete_{farm['id']}"):
+        grower["farms"] = [
+            f for f in grower["farms"]
+            if f["id"] != farm["id"]
+        ]
+        save_data()
+        st.rerun()
+
 
         # -----------------------------
         # TOTALS
