@@ -82,67 +82,45 @@ if st.session_state.growers:
         )
 
     st.divider()
+    
+# =================================================
+# GROWER TOTALS (MULTI-FARM SAFE VERSION)
+# =================================================
+if grower["farms"]:
 
-        # =================================================
-    # 🔥 GROWER AGGREGATED TOTALS (FIXED VERSION)
-    # =================================================
-    if grower["farms"]:
+    total_grower_tonnes = 0.0
+    total_grower_cut = 0.0
+    total_grower_target_tonnes = 0.0
 
-        total_grower_tonnes = 0
-        total_grower_cut = 0
-        total_grower_target_tonnes = 0
+    for farm in grower["farms"]:
+        fid = farm["id"]
 
-        for farm in grower["farms"]:
-            fid = farm["id"]
+        # Pull values safely from session_state
+        total = float(st.session_state.get(f"total_{fid}", 0.0))
+        cut = float(st.session_state.get(f"cut_{fid}", 0.0))
+        target = float(st.session_state.get(f"target_{fid}", 0.0))
 
-            total = st.session_state.get(f"total_{fid}", 0)
-            cut = st.session_state.get(f"cut_{fid}", 0)
-            target = st.session_state.get(f"target_{fid}", 0)
+        total_grower_tonnes += total
+        total_grower_cut += cut
+        total_grower_target_tonnes += (total * target / 100.0)
 
-            total_grower_tonnes += total
-            total_grower_cut += cut
-            total_grower_target_tonnes += (total * target / 100)
+    grower_percent_cut = (
+        (total_grower_cut / total_grower_tonnes) * 100
+        if total_grower_tonnes > 0 else 0.0
+    )
 
-        grower_percent_cut = (
-            (total_grower_cut / total_grower_tonnes) * 100
-            if total_grower_tonnes > 0 else 0
-        )
+    grower_target_percent = (
+        (total_grower_target_tonnes / total_grower_tonnes) * 100
+        if total_grower_tonnes > 0 else 0.0
+    )
 
-        grower_target_percent = (
-            (total_grower_target_tonnes / total_grower_tonnes) * 100
-            if total_grower_tonnes > 0 else 0
-        )
+    st.divider()
+    st.subheader("Grower Totals (All Farms)")
+    st.write(f"Total Grower Tonnes: {total_grower_tonnes:.2f}")
+    st.write(f"Total Grower Tonnes Cut: {total_grower_cut:.2f}")
+    st.write(f"Total Grower % Cut: {grower_percent_cut:.2f}%")
+    st.write(f"Total Grower Target %: {grower_target_percent:.2f}%")
 
-        st.divider()
-        st.subheader("Grower Totals (All Farms)")
-        st.write(f"Total Grower Tonnes: {total_grower_tonnes:.2f}")
-        st.write(f"Total Grower Tonnes Cut: {total_grower_cut:.2f}")
-        st.write(f"Total Grower % Cut: {grower_percent_cut:.2f}%")
-        st.write(f"Total Grower Target %: {grower_target_percent:.2f}%")
-
-
-    # -------------------------------------------------
-    # Add Farm
-    # -------------------------------------------------
-    st.subheader("Add Farm")
-    new_farm_name = st.text_input("Farm Number")
-
-    if st.button("Add Farm"):
-        if new_farm_name.strip():
-
-            farm_id = str(uuid.uuid4())
-
-            grower["farms"].append({
-                "id": farm_id,
-                "name": new_farm_name
-            })
-
-            st.session_state[f"total_{farm_id}"] = 0.0
-            st.session_state[f"cut_{farm_id}"] = 0.0
-            st.session_state[f"target_{farm_id}"] = 0.0
-            st.session_state[f"tpb_{farm_id}"] = 0.0
-            st.session_state[f"bpd_{farm_id}"] = 0.0
-            st.session_state[f"days_{farm_id}"] = 0
 
     # -------------------------------------------------
     # Farm Section
