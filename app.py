@@ -34,6 +34,22 @@ if st.session_state.growers:
     selected_grower_name = st.selectbox("Select Grower", grower_names)
 
     grower = next(g for g in st.session_state.growers if g["name"] == selected_grower_name)
+# -------------------------------------------------
+# Upgrade ALL farms safely (prevents KeyError)
+# -------------------------------------------------
+defaults = {
+    "total": 0.0,
+    "cut": 0.0,
+    "target": 0.0,
+    "tpb": 0.0,
+    "bpd": 0.0,
+    "days": 0
+}
+
+for farm in grower["farms"]:
+    for key, value in defaults.items():
+        if key not in farm:
+            farm[key] = value
 
     st.divider()
 
